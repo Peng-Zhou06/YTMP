@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}课程成绩管理{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Heading -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">课程成绩管理</h1>
+        <a href="{{ url_for('score.batch_score', course_id=course.id) }}" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm">
+            <i class="fas fa-edit fa-sm text-white-50"></i> 批量更新成绩
+        </a>
+    </div>
+
+    <!-- DataTales Example -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">课程：{{ course.course_name }}（{{ course.course_code }}）</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>学号</th>
+                            <th>姓名</th>
+                            <th>班级</th>
+                            <th>专业</th>
+                            <th>成绩</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tfoot>
+                        <tr>
+                            <th>学号</th>
+                            <th>姓名</th>
+                            <th>班级</th>
+                            <th>专业</th>
+                            <th>成绩</th>
+                            <th>操作</th>
+                        </tr>
+                    </tfoot>
+                    <tbody>
+                        {% for score in scores %}
+                        <tr>
+                            <td>{{ score.student.student_id }}</td>
+                            <td>{{ score.student.name }}</td>
+                            <td>{{ score.student.class_name }}</td>
+                            <td>{{ score.student.major }}</td>
+                            <td>{{ score.score }}</td>
+                            <td>
+                                <a href="{{ url_for('score.edit_score', score_id=score.id) }}" class="btn btn-sm btn-info">
+                                    <i class="fas fa-edit"></i> 编辑
+                                </a>
+                                <a href="{{ url_for('score.delete_score', score_id=score.id) }}" class="btn btn-sm btn-danger" onclick="return confirm('确定要删除该成绩吗？')">
+                                    <i class="fas fa-trash"></i> 删除
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    $('#dataTable').DataTable({
+        "order": [[0, "asc"]]
+    });
+});
+</script>
+{% endblock %}

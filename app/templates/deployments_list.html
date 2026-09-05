@@ -1,0 +1,118 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}部署管理{% endblock %}
+
+{% block page_title %}部署管理{% endblock %}
+
+{% block page_subtitle %}管理项目部署记录{% endblock %}
+
+{% block content %}
+<!-- 操作栏 -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h6 class="mb-0"><i class="fa fa-rocket" style="color: var(--primary-color);"></i> 部署管理</h6>
+                <small class="text-muted">管理项目的部署记录和状态</small>
+            </div>
+            <a href="{{ url_for('project.add_deployment') }}" class="btn btn-primary">
+                <i class="fa fa-plus"></i> 添加部署
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- 筛选器 -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-3">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="col-md-4">
+                <select name="team_id" class="form-select">
+                    <option value="">全部小组</option>
+                    {% for team in teams %}
+                    <option value="{{ team.id }}" {% if request.args.get('team_id')|int == team.id %}selected{% endif %}>{{ team.team_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <select name="status" class="form-select">
+                    <option value="">全部状态</option>
+                    <option value="pending" {% if request.args.get('status') == 'pending' %}selected{% endif %}>待部署</option>
+                    <option value="deploying" {% if request.args.get('status') == 'deploying' %}selected{% endif %}>部署中</option>
+                    <option value="success" {% if request.args.get('status') == 'success' %}selected{% endif %}>部署成功</option>
+                    <option value="failed" {% if request.args.get('status') == 'failed' %}selected{% endif %}>部署失败</option>
+                    <option value="rolled_back" {% if request.args.get('status') == 'rolled_back' %}selected{% endif %}>已回滚</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <button type="submit" class="btn btn-primary"><i class="fa fa-search"></i> 筛选</button>
+                <a href="{{ url_for('project.deployments_list') }}" class="btn btn-secondary"><i class="fa fa-refresh"></i> 重置</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 部署列表 -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title"><i class="fa fa-list" style="color: var(--primary-color);"></i> 部署记录</h5>
+    </div>
+    <div class="card-body">
+        {% if deployments %}
+        <div class="table-responsive">
+            <table class="table table-modern">
+                <thead>
+                    <tr>
+                        <th>部署编号</th>
+                        <th>项目名称</th>
+                        <th>小组</th>
+                        <th>部署人</th>
+                        <th>状态</th>
+                        <th>部署时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for deployment in deployments %}
+                    <tr>
+                        <td><strong>{{ deployment.deployment_code }}</strong></td>
+                        <td>{{ deployment.project.name if deployment.project else '-' }}</td>
+                        <td>{{ deployment.team.team_name if deployment.team else '-' }}</td>
+                        <td>{{ deployment.deployer.name if deployment.deployer else '-' }}</td>
+                        <td>
+                            {% if deployment.status == 'pending' %}
+                                <span class="badge badge-pending">待部署</span>
+                            {% elif deployment.status == 'deploying' %}
+                                <span class="badge badge-deploying">部署中</span>
+                            {% elif deployment.status == 'success' %}
+                                <span class="badge badge-success">部署成功</span>
+                            {% elif deployment.status == 'failed' %}
+                                <span class="badge badge-danger">部署失败</span>
+                            {% elif deployment.status == 'rolled_back' %}
+                                <span class="badge badge-warning">已回滚</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ deployment.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                        <td>
+                            <div class="action-btns">
+                                <a href="{{ url_for('project.deployment_detail', deployment_id=deployment.id) }}" class="btn btn-sm btn-info">
+                                    <i class="fa fa-eye"></i> 查看
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="fa fa-rocket"></i>
+            <h5>暂无部署记录</h5>
+            <p class="text-muted">还没有任何部署记录</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

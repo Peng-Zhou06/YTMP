@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block title %}批量更新成绩{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">批量更新成绩</h1>
+    </div>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">课程：{{ course.course_name }}（{{ course.course_code }}）</h6>
+        </div>
+        <div class="card-body">
+            <form id="batchForm">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="course_id" value="{{ course.id }}">
+                <div class="table-responsive">
+                    <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                        <thead>
+                            <tr>
+                                <th>学号</th>
+                                <th>姓名</th>
+                                <th>班级</th>
+                                <th>专业</th>
+                                <th>成绩</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in scores %}
+                            <tr>
+                                <td>{{ item.student_code }}</td>
+                                <td>{{ item.student_name }}</td>
+                                <td>{{ item.class_name }}</td>
+                                <td>{{ item.major }}</td>
+                                <td>
+                                    <input type="number" data-student-id="{{ item.student_id }}" data-score-id="{% if item.score_id %}{{ item.score_id }}{% else %}null{% endif %}" class="form-control score-input" value="{{ item.score }}" min="0" max="100" step="0.1">
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="mt-4">
+                    <button type="button" id="saveBtn" class="btn btn-primary">
+                        <i class="fas fa-save"></i> 保存所有成绩
+                    </button>
+                    <a href="{{ url_for('score.scores_course_classes', course_id=course.id) }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> 返回
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    console.log('Batch page loaded');
+    
+    $('#saveBtn').click(function() {
+        console.log('Save button clicked');
+        
+        var $btn = $(this);
+        $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> 保存中...');
+        
+        var scores = [];
+        $('.score-input').each(function() {
+            var studentId = $(this).data('student-id');
+            var scoreId = $(this).data('score-id');
+            var scoreValue = $(this).val();
+            if (scoreValue !== '') {
+                scores.push({
+                    student_id: studentId,
+                    score: scoreValue,
+                    score_id: scoreId === 'null' ? null : scoreId
+                });
+            }
+        });
+        
+        console.log('Scores to save:', scores);
+        
+        if (scores.length === 0) {
+            alert('请输入至少一个成绩');
+            $btn.prop('disabled', false).html('<i class="fas fa-save"></i> 保存所有成绩');
+            return;
+        }
+        
+        var courseId = $('input[name="course_id"]').val();
+        var csrfToken = $('meta[name="csrf-token"]').attr('content');
+        
+        console.log('Course ID:', courseId);
+        console.log('CSRF Token:', csrfToken);
+        
+        $.ajax({
+            url: '/scores/save_batch',
+            type: 'POST',
+            contentType: 'application/json',
+            headers: {
+                'X-CSRFToken': csrfToken
+            },
+            data: JSON.stringify({
+                course_id: courseId,
+                scores: scores
+            }),
+            success: function(response) {
+                console.log('Success response:', response);
+                if (response.success) {
+                    alert('成绩保存成功');
+                    window.location.href = '/scores/course/' + courseId;
+                } else {
+                    alert('保存失败: ' + response.message);
+                    $btn.prop('disabled', false).html('<i class="fas fa-save"></i> 保存所有成绩');
+                }
+            },
+            error: function(xhr) {
+                console.log('Error:', xhr);
+                alert('请求失败: ' + (xhr.responseText || '请重试'));
+                $btn.prop('disabled', false).html('<i class="fas fa-save"></i> 保存所有成绩');
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

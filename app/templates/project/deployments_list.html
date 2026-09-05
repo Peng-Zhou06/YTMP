@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+
+{% block title %}部署管理{% endblock %}
+
+{% block page_title %}部署管理{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2><i class="fa fa-rocket"></i> 部署管理</h2>
+                <div>
+                    <a href="{{ url_for('project.add_deployment') }}" class="btn btn-primary">
+                        <i class="fa fa-plus"></i> 添加部署
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 筛选器 -->
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="GET" class="row g-3">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <div class="col-md-4">
+                            <label for="team_id" class="form-label">小组筛选</label>
+                            <select name="team_id" id="team_id" class="form-select">
+                                <option value="">全部小组</option>
+                                {% for team in teams %}
+                                <option value="{{ team.id }}" {% if request.args.get('team_id')|int == team.id %}selected{% endif %}>
+                                    {{ team.team_name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="status" class="form-label">状态筛选</label>
+                            <select name="status" id="status" class="form-select">
+                                <option value="">全部状态</option>
+                                <option value="pending" {% if request.args.get('status') == 'pending' %}selected{% endif %}>待部署</option>
+                                <option value="deploying" {% if request.args.get('status') == 'deploying' %}selected{% endif %}>部署中</option>
+                                <option value="success" {% if request.args.get('status') == 'success' %}selected{% endif %}>部署成功</option>
+                                <option value="failed" {% if request.args.get('status') == 'failed' %}selected{% endif %}>部署失败</option>
+                                <option value="rolled_back" {% if request.args.get('status') == 'rolled_back' %}selected{% endif %}>已回滚</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <button type="submit" class="btn btn-primary mt-4">
+                                <i class="fa fa-filter"></i> 应用筛选
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 部署列表 -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title">部署记录</h5>
+        </div>
+        <div class="card-body">
+            {% if pagination.items %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>小组</th>
+                            <th>环境</th>
+                            <th>版本</th>
+                            <th>状态</th>
+                            <th>部署URL</th>
+                            <th>部署人</th>
+                            <th>部署时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for deployment in pagination.items %}
+                        <tr>
+                            <td>{{ deployment.id }}</td>
+                            <td>{{ deployment.team.team_name if deployment.team else '-' }}</td>
+                            <td>
+                                <span class="badge {% if deployment.environment == 'production' %}bg-danger{% elif deployment.environment == 'staging' %}bg-warning{% else %}bg-info{% endif %}">
+                                    {{ {'development': '开发', 'staging': '测试', 'production': '生产'}[deployment.environment] }}
+                                </span>
+                            </td>
+                            <td><code>{{ deployment.version }}</code></td>
+                            <td>
+                                <span class="badge {% if deployment.deploy_status == 'success' %}bg-success{% elif deployment.deploy_status == 'deploying' %}bg-primary{% elif deployment.deploy_status == 'failed' %}bg-danger{% elif deployment.deploy_status == 'rolled_back' %}bg-dark{% else %}bg-secondary{% endif %}">
+                                    {{ {'pending': '待部署', 'deploying': '部署中', 'success': '部署成功', 'failed': '部署失败', 'rolled_back': '已回滚'}[deployment.deploy_status] }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if deployment.deploy_url %}
+                                <a href="{{ deployment.deploy_url }}" target="_blank" class="text-truncate d-inline-block" style="max-width: 150px;">
+                                    {{ deployment.deploy_url }}
+                                </a>
+                                {% else %}
+                                -
+                                {% endif %}
+                            </td>
+                            <td>{{ deployment.deployer.name if deployment.deployer else '-' }}</td>
+                            <td>{{ deployment.created_at.strftime('%m-%d %H:%M') }}</td>
+                            <td>
+                                <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#deploymentModal{{ deployment.id }}">
+                                    <i class="fa fa-eye"></i> 查看
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- 分页 -->
+            {% if pagination.pages > 1 %}
+            <div class="pagination">
+                {{ pagination.links }}
+            </div>
+            {% endif %}
+            {% else %}
+            <div class="alert alert-info">
+                <i class="fa fa-info-circle"></i> 暂无部署记录
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- 部署详情模态框 -->
+    {% for deployment in pagination.items %}
+    <div class="modal fade" id="deploymentModal{{ deployment.id }}" tabindex="-1" aria-labelledby="deploymentModalLabel{{ deployment.id }}" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deploymentModalLabel{{ deployment.id }}">部署详情 #{{ deployment.id }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">小组：</label>
+                                <span>{{ deployment.team.team_name if deployment.team else '-' }}</span>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">环境：</label>
+                                <span class="badge {% if deployment.environment == 'production' %}bg-danger{% elif deployment.environment == 'staging' %}bg-warning{% else %}bg-info{% endif %}">
+                                    {{ {'development': '开发', 'staging': '测试', 'production': '生产'}[deployment.environment] }}
+                                </span>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">版本：</label>
+                                <code>{{ deployment.version }}</code>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">状态：</label>
+                                <span class="badge {% if deployment.deploy_status == 'success' %}bg-success{% elif deployment.deploy_status == 'deploying' %}bg-primary{% elif deployment.deploy_status == 'failed' %}bg-danger{% elif deployment.deploy_status == 'rolled_back' %}bg-dark{% else %}bg-secondary{% endif %}">
+                                    {{ {'pending': '待部署', 'deploying': '部署中', 'success': '部署成功', 'failed': '部署失败', 'rolled_back': '已回滚'}[deployment.deploy_status] }}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">部署URL：</label>
+                                {% if deployment.deploy_url %}
+                                <a href="{{ deployment.deploy_url }}" target="_blank">{{ deployment.deploy_url }}</a>
+                                {% else %}
+                                <span>-</span>
+                                {% endif %}
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Commit Hash：</label>
+                                <code>{{ deployment.commit_hash or '-' }}</code>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">部署人：</label>
+                                <span>{{ deployment.deployer.name if deployment.deployer else '-' }}</span>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">部署时间：</label>
+                                <span>{{ deployment.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if deployment.deploy_started_at %}
+                    <div class="mb-3">
+                        <label class="form-label">开始部署时间：</label>
+                        <span>{{ deployment.deploy_started_at.strftime('%Y-%m-%d %H:%M:%S') }}</span>
+                    </div>
+                    {% endif %}
+                    
+                    {% if deployment.deploy_finished_at %}
+                    <div class="mb-3">
+                        <label class="form-label">完成部署时间：</label>
+                        <span>{{ deployment.deploy_finished_at.strftime('%Y-%m-%d %H:%M:%S') }}</span>
+                    </div>
+                    {% endif %}
+                    
+                    {% if deployment.rollback_reason %}
+                    <div class="mb-3">
+                        <label class="form-label">回滚原因：</label>
+                        <p class="text-danger">{{ deployment.rollback_reason }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="mb-3">
+                        <label class="form-label">部署说明：</label>
+                        <p>{{ deployment.notes or '-' }}</p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

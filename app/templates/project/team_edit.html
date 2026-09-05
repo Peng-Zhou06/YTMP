@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+
+{% block title %}编辑小组 - 云智实训管理平台{% endblock %}
+
+{% block page_title %}编辑小组{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">修改小组信息</h5>
+                <a href="javascript:history.back()" class="btn btn-sm btn-outline-secondary">
+                    <i class="fa fa-arrow-left"></i> 返回
+                </a>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="mb-3">
+                        <label for="team_name" class="form-label">小组名称 <span class="text-danger">*</span></label>
+                        {{ form.team_name(class="form-control", placeholder="请输入小组名称") }}
+                        {% for error in form.team_name.errors %}
+                            <span class="text-danger">{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">所属项目</label>
+                        <input type="text" class="form-control" value="{{ project.name }}" disabled>
+                        <small class="text-muted">项目不可更改</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">组长</label>
+                        <input type="text" class="form-control" value="{{ team.leader.name if team.leader else '-' }}" disabled>
+                        <small class="text-muted">组长不可在此更改，请在成员管理中操作</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">小组描述</label>
+                        {{ form.description(class="form-control", rows=3, placeholder="请输入小组描述") }}
+                        {% for error in form.description.errors %}
+                            <span class="text-danger">{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="github_repo" class="form-label">GitHub仓库地址</label>
+                        {{ form.github_repo(class="form-control", placeholder="https://github.com/username/repo") }}
+                        {% for error in form.github_repo.errors %}
+                            <span class="text-danger">{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('project.team_detail', team_id=team.id) }}" class="btn btn-secondary">
+                            <i class="fa fa-arrow-left"></i> 返回
+                        </a>
+                        {{ form.submit(class="btn btn-primary") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 右侧信息 -->
+    <div class="col-md-4">
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5 class="mb-0">小组信息</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>创建时间：</strong>{{ team.created_at.strftime('%Y-%m-%d') }}</p>
+                <p><strong>成员数量：</strong>{{ team.members|length }}人</p>
+                <p><strong>状态：</strong>
+                    {% if team.status == 'active' %}
+                        <span class="badge bg-success">活跃</span>
+                    {% elif team.status == 'completed' %}
+                        <span class="badge bg-primary">已完成</span>
+                    {% elif team.status == 'disbanded' %}
+                        <span class="badge bg-secondary">已解散</span>
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">快速操作</h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group">
+                    <a href="{{ url_for('project.team_detail', team_id=team.id) }}" class="list-group-item list-group-item-action">
+                        <i class="fa fa-eye"></i> 查看详情
+                    </a>
+                    <a href="{{ url_for('project.add_team_member', team_id=team.id) }}" class="list-group-item list-group-item-action">
+                        <i class="fa fa-user-plus"></i> 添加成员
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

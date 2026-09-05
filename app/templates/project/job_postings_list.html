@@ -1,0 +1,287 @@
+{% extends "base.html" %}
+
+{% block title %}招聘岗位采集{% endblock %}
+
+{% block page_title %}招聘岗位采集{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2><i class="fa fa-briefcase"></i> 招聘岗位采集</h2>
+                <div class="btn-group">
+                    <a href="{{ url_for('project.job_statistics') }}" class="btn btn-info">
+                        <i class="fa fa-bar-chart"></i> 统计分析
+                    </a>
+                    {% if current_user.role in ['admin', 'teacher'] %}
+                    <a href="{{ url_for('project.crawler_config_list') }}" class="btn btn-secondary">
+                        <i class="fa fa-cog"></i> 爬虫配置
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 操作面板（教师可见） -->
+    {% if current_user.role in ['admin', 'teacher'] %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title">采集操作</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-4">
+                <!-- 执行采集 -->
+                <div class="col-md-4">
+                    <form action="{{ url_for('project.crawl_jobs') }}" method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <div class="input-group">
+                            <input type="text" name="keywords" class="form-control" 
+                                   placeholder="输入关键词，逗号分隔" 
+                                   value="Python,Flask,爬虫,AI,Docker">
+                            <button type="submit" class="btn btn-success" id="crawlBtn">
+                                <i class="fa fa-download"></i> 采集岗位
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                
+                <!-- 生成模拟数据 -->
+                <div class="col-md-3">
+                    <form action="{{ url_for('project.generate_mock_jobs') }}" method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <div class="input-group">
+                            <input type="number" name="count" class="form-control" placeholder="数量" value="50" min="1" max="200">
+                            <button type="submit" class="btn btn-success">
+                                <i class="fa fa-random"></i> 生成模拟数据
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                
+                <!-- 去重操作 -->
+                <div class="col-md-2">
+                    <form action="{{ url_for('project.deduplicate_jobs') }}" method="POST" onsubmit="return confirm('确定要执行去重吗？');">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-warning">
+                            <i class="fa fa-filter"></i> 执行去重
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- 筛选器 -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-3">
+                    <input type="text" name="keyword" class="form-control" placeholder="搜索岗位名称" value="{{ keyword or '' }}">
+                </div>
+                <div class="col-md-2">
+                    <select name="location" class="form-select">
+                        <option value="">全部城市</option>
+                        {% for loc in locations %}
+                        <option value="{{ loc }}" {% if selected_location == loc %}selected{% endif %}>{{ loc }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select name="salary" class="form-select">
+                        <option value="">全部薪资</option>
+                        {% for sal in salaries %}
+                        <option value="{{ sal }}" {% if selected_salary == sal %}selected{% endif %}>{{ sal }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select name="experience" class="form-select">
+                        <option value="">全部经验</option>
+                        {% for exp in experiences %}
+                        <option value="{{ exp }}" {% if selected_experience == exp %}selected{% endif %}>{{ exp }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fa fa-search"></i> 搜索
+                    </button>
+                    <a href="{{ url_for('project.job_postings_list') }}" class="btn btn-secondary ml-2">
+                        <i class="fa fa-refresh"></i> 重置
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 岗位列表 -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title">岗位列表</h5>
+        </div>
+        <div class="card-body">
+            {% if jobs %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>岗位名称</th>
+                            <th>公司</th>
+                            <th>地点</th>
+                            <th>薪资</th>
+                            <th>经验</th>
+                            <th>学历</th>
+                            <th>技能标签</th>
+                            <th>来源</th>
+                            <th>发布时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for job in jobs %}
+                        <tr>
+                            <td>{{ job.job_title }}</td>
+                            <td>{{ job.company_name }}</td>
+                            <td>{{ job.location }}</td>
+                            <td><span class="badge bg-primary">{{ job.salary }}</span></td>
+                            <td>{{ job.experience }}</td>
+                            <td>{{ job.education }}</td>
+                            <td>
+                                {% if job.tags %}
+                                {% set tags = job.tags|fromjson %}
+                                {% for tag in tags[:3] %}
+                                <span class="badge bg-info">{{ tag }}</span>
+                                {% endfor %}
+                                {% if tags|length > 3 %}
+                                <span class="badge bg-secondary">+{{ tags|length - 3 }}</span>
+                                {% endif %}
+                                {% else %}
+                                -
+                                {% endif %}
+                            </td>
+                            <td>{{ job.source_website }}</td>
+                            <td>{{ job.posted_date.strftime('%Y-%m-%d') if job.posted_date else '-' }}</td>
+                            <td>
+                                <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#jobModal{{ job.id }}">
+                                    <i class="fa fa-eye"></i> 查看
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+                <i class="fa fa-info-circle"></i> 暂无岗位数据，点击上方按钮采集或生成模拟数据
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- 岗位详情模态框 -->
+    {% for job in jobs %}
+    <div class="modal fade" id="jobModal{{ job.id }}" tabindex="-1" aria-labelledby="jobModalLabel{{ job.id }}" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="jobModalLabel{{ job.id }}">{{ job.job_title }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="mb-2">
+                                <label class="fw-bold">公司名称：</label>
+                                <span>{{ job.company_name }}</span>
+                            </div>
+                            <div class="mb-2">
+                                <label class="fw-bold">公司类型：</label>
+                                <span>{{ job.company_type or '-' }}</span>
+                            </div>
+                            <div class="mb-2">
+                                <label class="fw-bold">工作地点：</label>
+                                <span>{{ job.location }}</span>
+                            </div>
+                            <div class="mb-2">
+                                <label class="fw-bold">薪资范围：</label>
+                                <span class="badge bg-primary">{{ job.salary }}</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-2">
+                                <label class="fw-bold">经验要求：</label>
+                                <span>{{ job.experience }}</span>
+                            </div>
+                            <div class="mb-2">
+                                <label class="fw-bold">学历要求：</label>
+                                <span>{{ job.education }}</span>
+                            </div>
+                            <div class="mb-2">
+                                <label class="fw-bold">来源网站：</label>
+                                <span>{{ job.source_website }}</span>
+                            </div>
+                            <div class="mb-2">
+                                <label class="fw-bold">发布日期：</label>
+                                <span>{{ job.posted_date.strftime('%Y-%m-%d') if job.posted_date else '-' }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="fw-bold">技能标签：</label>
+                        <div>
+                            {% if job.tags %}
+                            {% set tags = job.tags|fromjson %}
+                            {% for tag in tags %}
+                            <span class="badge bg-info me-1">{{ tag }}</span>
+                            {% endfor %}
+                            {% else %}
+                            -
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="fw-bold">岗位职责：</label>
+                        <p>{{ job.description or '-' }}</p>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="fw-bold">任职要求：</label>
+                        <p>{{ job.requirements or '-' }}</p>
+                    </div>
+                    
+                    <div>
+                        <label class="fw-bold">来源链接：</label>
+                        <a href="{{ job.source_url }}" target="_blank" class="text-primary">{{ job.source_url }}</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<script>
+// 采集按钮点击效果
+document.addEventListener('DOMContentLoaded', function() {
+    const crawlBtn = document.getElementById('crawlBtn');
+    if (crawlBtn) {
+        crawlBtn.addEventListener('click', function() {
+            // 禁用按钮并显示加载状态
+            this.disabled = true;
+            this.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 采集中...';
+            this.classList.remove('btn-success');
+            this.classList.add('btn-secondary');
+            
+            // 提交表单
+            this.closest('form').submit();
+        });
+    }
+});
+</script>
+{% endblock %}

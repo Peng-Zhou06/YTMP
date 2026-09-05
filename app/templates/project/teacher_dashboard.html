@@ -1,0 +1,443 @@
+{% extends 'base.html' %}
+
+{% block title %}数据驾驶舱 - 教师端{% endblock %}
+
+{% block page_title %}数据驾驶舱{% endblock %}
+
+{% block extra_css %}
+<script src="https://cdn.staticfile.org/echarts/5.4.3/echarts.min.js"></script>
+<style>
+.stat-card {
+    border-radius: 10px;
+    padding: 20px;
+    color: white;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transition: transform 0.2s;
+}
+.stat-card:hover {
+    transform: translateY(-5px);
+}
+.stat-card .stat-number {
+    font-size: 36px;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+.stat-card .stat-label {
+    font-size: 14px;
+    opacity: 0.9;
+}
+.bg-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+.bg-success { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
+.bg-warning { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+.bg-info { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+.bg-danger { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
+.bg-purple { background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); }
+.bg-teal { background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%); }
+.bg-orange { background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); }
+.chart-card {
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+}
+.chart-card .card-header {
+    background: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-3 col-md-6">
+        <div class="stat-card bg-success">
+            <div class="stat-number">{{ stats.total_teams }}</div>
+            <div class="stat-label">小组数量</div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="stat-card bg-primary">
+            <div class="stat-number">{{ stats.total_projects }}</div>
+            <div class="stat-label">项目数量</div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="stat-card bg-danger">
+            <div class="stat-number">{{ stats.total_tasks }}</div>
+            <div class="stat-label">任务总数</div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="stat-card bg-purple">
+            <div class="stat-number">{{ stats.done_tasks }}</div>
+            <div class="stat-label">已完成任务</div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="stat-card bg-warning">
+            <div class="stat-number">{{ stats.delayed_tasks }}</div>
+            <div class="stat-label">延期任务</div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="stat-card bg-teal">
+            <div class="stat-number">{{ stats.total_bugs }}</div>
+            <div class="stat-label">Bug总数</div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="stat-card bg-danger">
+            <div class="stat-number">{{ stats.open_bugs }}</div>
+            <div class="stat-label">未解决Bug</div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="stat-card bg-info">
+            <div class="stat-number">{{ stats.report_submission_rate }}%</div>
+            <div class="stat-label">日报提交率</div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="stat-card bg-orange">
+            <div class="stat-number">{{ stats.total_ai_records }}</div>
+            <div class="stat-label">AI使用次数</div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="stat-card bg-success">
+            <div class="stat-number">{{ stats.deployment_success_rate }}%</div>
+            <div class="stat-label">部署成功率</div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card chart-card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">任务状态分布</h5>
+            </div>
+            <div class="card-body">
+                <div id="taskStatusChart" style="height: 350px;"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card chart-card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Bug状态分布</h5>
+            </div>
+            <div class="card-body">
+                <div id="bugStatusChart" style="height: 350px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card chart-card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">项目进度排行</h5>
+            </div>
+            <div class="card-body">
+                <div id="projectProgressChart" style="height: 350px;"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card chart-card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">小组任务完成率</h5>
+            </div>
+            <div class="card-body">
+                <div id="teamProgressChart" style="height: 350px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card chart-card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">近7天日报提交趋势</h5>
+            </div>
+            <div class="card-body">
+                <div id="dailyReportTrendChart" style="height: 350px;"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card chart-card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">近7天任务完成趋势</h5>
+            </div>
+            <div class="card-body">
+                <div id="taskCompletionTrendChart" style="height: 350px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card chart-card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">任务优先级分布</h5>
+            </div>
+            <div class="card-body">
+                <div id="priorityChart" style="height: 350px;"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card chart-card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">未提交日报提醒</h5>
+            </div>
+            <div class="card-body">
+                {% if unsubmitted_reports %}
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>日期</th>
+                            <th>小组</th>
+                            <th>学生</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for report in unsubmitted_reports %}
+                        <tr>
+                            <td>{{ report.report_date.strftime('%Y-%m-%d') }}</td>
+                            <td>{{ report.team.team_name }}</td>
+                            <td>{{ report.student.name }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p class="text-center text-muted">暂无未提交日报</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-12">
+        <div class="card chart-card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">最近项目</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>项目名称</th>
+                            <th>状态</th>
+                            <th>小组数</th>
+                            <th>开始时间</th>
+                            <th>结束时间</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for project in recent_projects %}
+                        <tr>
+                            <td><a href="{{ url_for('project.project_detail', project_id=project.id) }}">{{ project.name }}</a></td>
+                            <td>
+                                {% if project.status == 'planning' %}
+                                <span class="badge bg-secondary">规划中</span>
+                                {% elif project.status == 'ongoing' %}
+                                <span class="badge bg-primary">进行中</span>
+                                {% elif project.status == 'completed' %}
+                                <span class="badge bg-success">已完成</span>
+                                {% elif project.status == 'archived' %}
+                                <span class="badge bg-dark">已归档</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ project.teams|length }}</td>
+                            <td>{{ project.start_date.strftime('%Y-%m-%d') }}</td>
+                            <td>{{ project.end_date.strftime('%Y-%m-%d') }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var taskStatusChart = echarts.init(document.getElementById('taskStatusChart'));
+    taskStatusChart.setOption({
+        tooltip: { trigger: 'item' },
+        legend: { orient: 'vertical', left: 'left' },
+        series: [{
+            name: '任务状态',
+            type: 'pie',
+            radius: ['40%', '70%'],
+            avoidLabelOverlap: false,
+            itemStyle: {
+                borderRadius: 10,
+                borderColor: '#fff',
+                borderWidth: 2
+            },
+            label: { show: false, position: 'center' },
+            emphasis: {
+                label: { show: true, fontSize: '20', fontWeight: 'bold' }
+            },
+            data: {{ task_status_data | tojson }}
+        }]
+    });
+
+    var bugStatusChart = echarts.init(document.getElementById('bugStatusChart'));
+    bugStatusChart.setOption({
+        tooltip: { trigger: 'item' },
+        legend: { orient: 'vertical', left: 'left' },
+        series: [{
+            name: 'Bug状态',
+            type: 'pie',
+            radius: ['40%', '70%'],
+            avoidLabelOverlap: false,
+            itemStyle: {
+                borderRadius: 10,
+                borderColor: '#fff',
+                borderWidth: 2
+            },
+            label: { show: false, position: 'center' },
+            emphasis: {
+                label: { show: true, fontSize: '20', fontWeight: 'bold' }
+            },
+            data: {{ bug_status_data | tojson }}
+        }]
+    });
+
+    var projectProgressChart = echarts.init(document.getElementById('projectProgressChart'));
+    projectProgressChart.setOption({
+        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+        grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+        xAxis: { type: 'value', max: 100, axisLabel: { formatter: '{value}%' } },
+        yAxis: { type: 'category', data: {{ project_names | tojson }} },
+        series: [{
+            name: '完成率',
+            type: 'bar',
+            data: {{ project_progress | tojson }},
+            itemStyle: {
+                color: function(params) {
+                    var percent = params.value;
+                    if (percent >= 80) return '#28a745';
+                    if (percent >= 50) return '#17a2b8';
+                    if (percent >= 30) return '#ffc107';
+                    return '#dc3545';
+                }
+            },
+            label: { show: true, position: 'right', formatter: '{c}%' }
+        }]
+    });
+
+    var teamProgressData = {{ team_task_data | tojson }};
+    var teamProgressChart = echarts.init(document.getElementById('teamProgressChart'));
+    teamProgressChart.setOption({
+        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+        grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+        xAxis: { type: 'value', max: 100, axisLabel: { formatter: '{value}%' } },
+        yAxis: { type: 'category', data: teamProgressData.map(item => item.name) },
+        series: [{
+            name: '完成率',
+            type: 'bar',
+            data: teamProgressData.map(item => item.progress),
+            itemStyle: {
+                color: function(params) {
+                    var percent = params.value;
+                    if (percent >= 80) return '#28a745';
+                    if (percent >= 50) return '#17a2b8';
+                    if (percent >= 30) return '#ffc107';
+                    return '#dc3545';
+                }
+            },
+            label: { show: true, position: 'right', formatter: '{c}%' }
+        }]
+    });
+
+    var dailyReportTrendData = {{ daily_report_trend | tojson }};
+    var dailyReportTrendChart = echarts.init(document.getElementById('dailyReportTrendChart'));
+    dailyReportTrendChart.setOption({
+        tooltip: { trigger: 'axis' },
+        grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+        xAxis: { type: 'category', data: dailyReportTrendData.map(item => item.date), boundaryGap: false },
+        yAxis: { type: 'value' },
+        series: [{
+            name: '日报提交数',
+            type: 'line',
+            data: dailyReportTrendData.map(item => item.count),
+            smooth: true,
+            areaStyle: {
+                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                    { offset: 0, color: 'rgba(54, 162, 235, 0.5)' },
+                    { offset: 1, color: 'rgba(54, 162, 235, 0.1)' }
+                ])
+            },
+            itemStyle: { color: '#36a2eb' }
+        }]
+    });
+
+    var taskCompletionTrendData = {{ task_completion_trend | tojson }};
+    var taskCompletionTrendChart = echarts.init(document.getElementById('taskCompletionTrendChart'));
+    taskCompletionTrendChart.setOption({
+        tooltip: { trigger: 'axis' },
+        grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+        xAxis: { type: 'category', data: taskCompletionTrendData.map(item => item.date), boundaryGap: false },
+        yAxis: { type: 'value' },
+        series: [{
+            name: '完成任务数',
+            type: 'line',
+            data: taskCompletionTrendData.map(item => item.count),
+            smooth: true,
+            areaStyle: {
+                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                    { offset: 0, color: 'rgba(75, 192, 192, 0.5)' },
+                    { offset: 1, color: 'rgba(75, 192, 192, 0.1)' }
+                ])
+            },
+            itemStyle: { color: '#4bc0c0' }
+        }]
+    });
+
+    var priorityChart = echarts.init(document.getElementById('priorityChart'));
+    priorityChart.setOption({
+        tooltip: { trigger: 'item' },
+        legend: { orient: 'vertical', left: 'left' },
+        series: [{
+            name: '优先级',
+            type: 'pie',
+            radius: ['40%', '70%'],
+            avoidLabelOverlap: false,
+            itemStyle: {
+                borderRadius: 10,
+                borderColor: '#fff',
+                borderWidth: 2
+            },
+            label: { show: false, position: 'center' },
+            emphasis: {
+                label: { show: true, fontSize: '20', fontWeight: 'bold' }
+            },
+            data: {{ priority_data | tojson }}
+        }]
+    });
+
+    window.addEventListener('resize', function() {
+        taskStatusChart.resize();
+        bugStatusChart.resize();
+        projectProgressChart.resize();
+        teamProgressChart.resize();
+        dailyReportTrendChart.resize();
+        taskCompletionTrendChart.resize();
+        priorityChart.resize();
+    });
+});
+</script>
+{% endblock %}

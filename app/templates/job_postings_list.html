@@ -1,0 +1,91 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}招聘岗位采集{% endblock %}
+
+{% block page_title %}招聘岗位采集{% endblock %}
+
+{% block page_subtitle %}采集和管理招聘岗位信息{% endblock %}
+
+{% block content %}
+<!-- 操作面板 -->
+{% if current_user.role in ['admin', 'teacher'] %}
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="card-title"><i class="fa fa-cog" style="color: var(--primary-color);"></i> 采集操作</h5>
+    </div>
+    <div class="card-body">
+        <div class="row g-4">
+            <div class="col-md-4">
+                <form action="{{ url_for('project.crawl_jobs') }}" method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="input-group">
+                        <input type="text" name="keywords" class="form-control" placeholder="输入关键词，逗号分隔" value="Python,Flask,爬虫,AI,Docker">
+                        <button type="submit" class="btn btn-primary" id="crawlBtn">
+                            <i class="fa fa-download"></i> 采集岗位
+                        </button>
+                    </div>
+                </form>
+            </div>
+            <div class="col-md-4">
+                <form action="{{ url_for('project.generate_mock_jobs') }}" method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-secondary w-100">
+                        <i class="fa fa-magic"></i> 生成模拟数据
+                    </button>
+                </form>
+            </div>
+            <div class="col-md-4">
+                <div class="btn-group w-100">
+                    <a href="{{ url_for('project.job_statistics') }}" class="btn btn-info">
+                        <i class="fa fa-bar-chart"></i> 统计分析
+                    </a>
+                    <a href="{{ url_for('project.crawler_config_list') }}" class="btn btn-secondary">
+                        <i class="fa fa-cog"></i> 爬虫配置
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- 岗位列表 -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title"><i class="fa fa-briefcase" style="color: var(--primary-color);"></i> 岗位列表</h5>
+        <div class="card-actions">
+            <span class="text-muted">共 {{ jobs|length }} 条记录</span>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-modern">
+                <thead>
+                    <tr>
+                        <th>岗位名称</th>
+                        <th>公司名称</th>
+                        <th>薪资范围</th>
+                        <th>工作地点</th>
+                        <th>经验要求</th>
+                        <th>学历要求</th>
+                        <th>发布时间</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for job in jobs %}
+                    <tr>
+                        <td><strong>{{ job.title }}</strong></td>
+                        <td>{{ job.company }}</td>
+                        <td><span class="badge badge-salary">{{ job.salary or '面议' }}</span></td>
+                        <td>{{ job.location }}</td>
+                        <td>{{ job.experience or '-' }}</td>
+                        <td>{{ job.education or '-' }}</td>
+                        <td>{{ job.publish_date.strftime('%Y-%m-%d') if job.publish_date else '-' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

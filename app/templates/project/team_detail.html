@@ -1,0 +1,433 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ team.team_name }} - 小组详情{% endblock %}
+
+{% block page_title %}{{ team.team_name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- 左侧：小组信息 -->
+    <div class="col-md-8">
+        <!-- 基本信息 -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div>
+                    <a href="javascript:history.back()" class="btn btn-sm btn-outline-secondary me-2">
+                        <i class="fa fa-arrow-left"></i> 返回
+                    </a>
+                    <h5 class="mb-0 d-inline">小组信息</h5>
+                </div>
+                {% if current_user.role in ['admin', 'teacher'] %}
+                <div>
+                    <a href="{{ url_for('project.edit_team', team_id=team.id) }}" class="btn btn-sm btn-warning">
+                        <i class="fa fa-edit"></i> 编辑
+                    </a>
+                    <button class="btn btn-sm btn-danger" onclick="confirmDelete()">
+                        <i class="fa fa-trash"></i> 删除
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless">
+                    <tr>
+                        <th width="150">所属项目：</th>
+                        <td>{{ team.project.name }}</td>
+                    </tr>
+                    <tr>
+                        <th>小组名称：</th>
+                        <td>{{ team.team_name }}</td>
+                    </tr>
+                    <tr>
+                        <th>组长：</th>
+                        <td>
+                            {{ team.leader.name if team.leader else '-' }}
+                            ({{ team.leader.student_id if team.leader else '' }})
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>成员数量：</th>
+                        <td><span class="badge bg-info">{{ team.members|length }}人</span></td>
+                    </tr>
+                    <tr>
+                        <th>GitHub仓库：</th>
+                        <td>
+                            {% if team.github_repo %}
+                                <a href="{{ team.github_repo }}" target="_blank" class="text-primary">
+                                    <i class="fa fa-github"></i> {{ team.github_repo }}
+                                </a>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>状态：</th>
+                        <td>
+                            {% if team.status == 'active' %}
+                                <span class="badge bg-success">活跃</span>
+                            {% elif team.status == 'completed' %}
+                                <span class="badge bg-primary">已完成</span>
+                            {% elif team.status == 'disbanded' %}
+                                <span class="badge bg-secondary">已解散</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% if team.score %}
+                    <tr>
+                        <th>小组得分：</th>
+                        <td><span class="text-success h5">{{ team.score }}</span></td>
+                    </tr>
+                    {% endif %}
+                    {% if team.teacher_comment %}
+                    <tr>
+                        <th>教师评语：</th>
+                        <td>{{ team.teacher_comment }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if team.description %}
+                    <tr>
+                        <th>小组描述：</th>
+                        <td>{{ team.description }}</td>
+                    </tr>
+                    {% endif %}
+                    <tr>
+                        <th>创建时间：</th>
+                        <td>{{ team.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+        
+        <!-- 小组成员 -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">小组成员 ({{ team.members|length }})</h5>
+                {% if current_user.role in ['admin', 'teacher'] %}
+                <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addMemberModal">
+                    <i class="fa fa-plus"></i> 添加成员
+                </button>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                {% if team.members %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>学号</th>
+                                <th>姓名</th>
+                                <th>角色</th>
+                                <th>加入时间</th>
+                                <th>贡献度</th>
+                                <th>状态</th>
+                                {% if current_user.role in ['admin', 'teacher'] %}
+                                <th>操作</th>
+                                {% endif %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for member in team.members %}
+                            <tr>
+                                <td>{{ member.student.student_id }}</td>
+                                <td><strong>{{ member.student.name }}</strong></td>
+                                <td>
+                                    {% if member.role == 'leader' %}
+                                        <span class="badge bg-danger">组长</span>
+                                    {% elif member.role == 'frontend' %}
+                                        <span class="badge bg-info">前端</span>
+                                    {% elif member.role == 'backend' %}
+                                        <span class="badge bg-primary">后端</span>
+                                    {% elif member.role == 'tester' %}
+                                        <span class="badge bg-warning">测试</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">成员</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ member.join_date.strftime('%Y-%m-%d') }}</td>
+                                <td>
+                                    {% if member.contribution_score %}
+                                        {{ member.contribution_score }}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if member.status == 'active' %}
+                                        <span class="badge bg-success">活跃</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">非活跃</span>
+                                    {% endif %}
+                                </td>
+                                {% if current_user.role in ['admin', 'teacher'] %}
+                                <td>
+                                    {% if member.student.id != team.leader_id %}
+                                    <button class="btn btn-sm btn-outline-primary" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#updateRoleModal{{ member.id }}">
+                                        <i class="fa fa-edit"></i> 角色
+                                    </button>
+                                    <form method="POST" 
+                                          action="{{ url_for('project.remove_team_member', team_id=team.id, student_id=member.student.id) }}"
+                                          style="display: inline;">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger"
+                                                onclick="return confirm('确定要移除该成员吗？')">
+                                            <i class="fa fa-times"></i> 移除
+                                        </button>
+                                    </form>
+                                    {% else %}
+                                    <span class="text-muted">组长</span>
+                                    {% endif %}
+                                </td>
+                                {% endif %}
+                            </tr>
+                            
+                            <!-- 更新角色模态框 -->
+                            {% if current_user.role in ['admin', 'teacher'] and member.student.id != team.leader_id %}
+                            <div class="modal fade" id="updateRoleModal{{ member.id }}" tabindex="-1">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <form method="POST" action="{{ url_for('project.update_member_role', team_id=team.id, student_id=member.student.id) }}">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">更新成员角色</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <p>学生：<strong>{{ member.student.name }}</strong></p>
+                                                <div class="mb-3">
+                                                    <label class="form-label">选择角色</label>
+                                                    <select name="role" class="form-select" required>
+                                                        <option value="member" {% if member.role == 'member' %}selected{% endif %}>成员</option>
+                                                        <option value="frontend" {% if member.role == 'frontend' %}selected{% endif %}>前端开发</option>
+                                                        <option value="backend" {% if member.role == 'backend' %}selected{% endif %}>后端开发</option>
+                                                        <option value="tester" {% if member.role == 'tester' %}selected{% endif %}>测试工程师</option>
+                                                        <option value="designer" {% if member.role == 'designer' %}selected{% endif %}>UI设计师</option>
+                                                        <option value="devops" {% if member.role == 'devops' %}selected{% endif %}>DevOps</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                                                <button type="submit" class="btn btn-primary">保存</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-info text-center">
+                    <i class="fa fa-users fa-2x mb-2"></i>
+                    <p>暂无成员</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- 任务列表 -->
+        {% if tasks %}
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">任务列表 ({{ tasks|length }})</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>任务编号</th>
+                                <th>标题</th>
+                                <th>负责人</th>
+                                <th>优先级</th>
+                                <th>状态</th>
+                                <th>进度</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for task in tasks[:10] %}
+                            <tr>
+                                <td>{{ task.task_code }}</td>
+                                <td>
+                                    <a href="{{ url_for('project.task_detail', task_id=task.id) }}">
+                                        {{ task.title }}
+                                    </a>
+                                </td>
+                                <td>{{ task.assignee.name if task.assignee else '-' }}</td>
+                                <td>
+                                    {% if task.priority == 'urgent' %}
+                                        <span class="badge bg-danger">紧急</span>
+                                    {% elif task.priority == 'high' %}
+                                        <span class="badge bg-warning">高</span>
+                                    {% elif task.priority == 'medium' %}
+                                        <span class="badge bg-info">中</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">低</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if task.status == 'done' %}
+                                        <span class="badge bg-success">已完成</span>
+                                    {% elif task.status == 'in_progress' %}
+                                        <span class="badge bg-primary">进行中</span>
+                                    {% elif task.status == 'review' %}
+                                        <span class="badge bg-warning">审核中</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">待办</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="progress" style="height: 20px;">
+                                        <div class="progress-bar" role="progressbar" 
+                                             style="width: {{ task.progress }}%">
+                                            {{ task.progress }}%
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- 右侧：统计信息 -->
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">统计数据</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-6 mb-3">
+                        <div class="border rounded p-3 text-center">
+                            <h3 class="text-primary">{{ stats.member_count }}</h3>
+                            <p class="text-muted mb-0">成员数</p>
+                        </div>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="border rounded p-3 text-center">
+                            <h3 class="text-success">{{ stats.total_tasks }}</h3>
+                            <p class="text-muted mb-0">任务总数</p>
+                        </div>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="border rounded p-3 text-center">
+                            <h3 class="text-info">{{ stats.completed_tasks }}</h3>
+                            <p class="text-muted mb-0">已完成</p>
+                        </div>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="border rounded p-3 text-center">
+                            <h3 class="text-warning">{{ '%.1f'|format(stats.task_completion_rate) }}%</h3>
+                            <p class="text-muted mb-0">完成率</p>
+                        </div>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="border rounded p-3 text-center">
+                            <h3 class="text-danger">{{ stats.total_bugs }}</h3>
+                            <p class="text-muted mb-0">Bug数</p>
+                        </div>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="border rounded p-3 text-center">
+                            <h3 class="text-secondary">{{ stats.total_commits }}</h3>
+                            <p class="text-muted mb-0">代码提交</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 快速链接 -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">快速链接</h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group">
+                    <a href="{{ url_for('project.tasks_list', team_id=team.id) }}" class="list-group-item list-group-item-action">
+                        <i class="fa fa-tasks"></i> 查看任务列表
+                    </a>
+                    <a href="{{ url_for('project.daily_reports_list', team_id=team.id) }}" class="list-group-item list-group-item-action">
+                        <i class="fa fa-file-text"></i> 查看日报
+                    </a>
+                    <a href="{{ url_for('project.bugs_list', team_id=team.id) }}" class="list-group-item list-group-item-action">
+                        <i class="fa fa-bug"></i> 查看Bug
+                    </a>
+                    <a href="{{ url_for('project.crawler_data_list', team_id=team.id) }}" class="list-group-item list-group-item-action">
+                        <i class="fa fa-spider"></i> 爬虫数据
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 添加成员模态框 -->
+{% if current_user.role in ['admin', 'teacher'] %}
+<div class="modal fade" id="addMemberModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('project.add_team_member', team_id=team.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-header">
+                    <h5 class="modal-title">添加小组成员</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">选择学生 <span class="text-danger">*</span></label>
+                        <select name="student_id" class="form-select" required>
+                            <option value="">请选择学生</option>
+                            {% for student in students %}
+                                {% if student.id not in team.members|map(attribute='student_id')|list %}
+                                <option value="{{ student.id }}">{{ student.name }} ({{ student.student_id }})</option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">角色</label>
+                        <select name="role" class="form-select">
+                            <option value="member">成员</option>
+                            <option value="frontend">前端开发</option>
+                            <option value="backend">后端开发</option>
+                            <option value="tester">测试工程师</option>
+                            <option value="designer">UI设计师</option>
+                            <option value="devops">DevOps</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary">添加</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- 删除确认表单 -->
+<form id="deleteForm" method="POST" style="display: none;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+</form>
+
+<script>
+function confirmDelete() {
+    if (confirm('确定要删除小组"{{ team.team_name }}"吗？此操作将同时删除该小组的所有任务和记录。')) {
+        const form = document.getElementById('deleteForm');
+        form.action = "{{ url_for('project.delete_team', team_id=team.id) }}";
+        form.submit();
+    }
+}
+</script>
+{% endblock %}

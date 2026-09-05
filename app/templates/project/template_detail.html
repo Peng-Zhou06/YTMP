@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+
+{% block title %}{{ template.name }} - 项目模板详情{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('system.dashboard') }}">首页</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('project.templates_list') }}">项目模板管理</a></li>
+                    <li class="breadcrumb-item active">{{ template.name }}</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- 左侧：模板信息 -->
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-info-circle"></i> 模板信息</h5>
+                    <div>
+                        {% if template.is_active %}
+                            <span class="badge badge-success">启用中</span>
+                        {% else %}
+                            <span class="badge badge-secondary">已禁用</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>模板名称：</strong>{{ template.name }}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>创建时间：</strong>{{ template.created_at.strftime('%Y-%m-%d %H:%M:%S') }}
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>难度级别：</strong>
+                            {% if template.difficulty_level == 'easy' %}
+                                <span class="badge badge-success">简单</span>
+                            {% elif template.difficulty_level == 'medium' %}
+                                <span class="badge badge-warning">中等</span>
+                            {% elif template.difficulty_level == 'hard' %}
+                                <span class="badge badge-danger">困难</span>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>预计工时：</strong>
+                            {% if template.estimated_hours %}
+                                {{ template.estimated_hours }} 小时
+                            {% else %}
+                                <span class="text-muted">未设置</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <strong>技术栈：</strong><br>
+                            {% if template.tech_stack %}
+                                <div class="mt-2">
+                                    {% for tech in template.tech_stack.split(',') %}
+                                        <span class="badge badge-info mr-2 mb-2">{{ tech.strip() }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <span class="text-muted">未设置</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <strong>模板描述：</strong>
+                        <p class="mt-2">{{ template.description or '暂无描述' }}</p>
+                    </div>
+
+                    {% if template.template_config %}
+                    <div class="mb-3">
+                        <strong>模板配置：</strong>
+                        <pre class="bg-light p-3 mt-2"><code>{{ template.template_config }}</code></pre>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- 使用该模板的项目 -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-project-diagram"></i> 使用此模板的项目 ({{ projects_count }})</h5>
+                </div>
+                <div class="card-body">
+                    {% if projects_count > 0 %}
+                        <p class="text-muted">已有 {{ projects_count }} 个项目使用了此模板</p>
+                        <a href="{{ url_for('course.projects_list') }}" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-list"></i> 查看所有项目
+                        </a>
+                    {% else %}
+                        <p class="text-muted">暂无项目使用此模板</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- 右侧：操作按钮和统计 -->
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-cogs"></i> 操作</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('project.edit_template', template_id=template.id) }}" 
+                           class="btn btn-primary">
+                            <i class="fas fa-edit"></i> 编辑模板
+                        </a>
+                        <a href="{{ url_for('course.add_project') }}" 
+                           class="btn btn-success">
+                            <i class="fas fa-plus"></i> 从此模板创建项目
+                        </a>
+                        <a href="{{ url_for('project.delete_template', template_id=template.id) }}" 
+                           class="btn btn-danger"
+                           onclick="return confirm('确定要删除此模板吗？')">
+                            <i class="fas fa-trash"></i> 删除模板
+                        </a>
+                        <a href="{{ url_for('project.templates_list') }}" 
+                           class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> 返回列表
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-chart-bar"></i> 统计信息</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <span>使用次数</span>
+                            <span class="badge badge-primary badge-pill">{{ projects_count }}</span>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <span>创建时间</span>
+                            <small class="text-muted">{{ template.created_at.strftime('%Y-%m-%d') }}</small>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <span>最后更新</span>
+                            <small class="text-muted">{{ template.updated_at.strftime('%Y-%m-%d') }}</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

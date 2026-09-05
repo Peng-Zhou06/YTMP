@@ -1,0 +1,542 @@
+{% extends 'base.html' %}
+
+{% block title %}个人统计 - {{ student.name }}{% endblock %}
+
+{% block page_title %}个人统计{% endblock %}
+
+{% block extra_css %}
+<script src="https://cdn.staticfile.org/echarts/5.4.3/echarts.min.js"></script>
+<style>
+.stat-card {
+    border-radius: 10px;
+    padding: 20px;
+    color: white;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transition: transform 0.2s;
+}
+.stat-card:hover {
+    transform: translateY(-5px);
+}
+.stat-card .stat-number {
+    font-size: 36px;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+.stat-card .stat-label {
+    font-size: 14px;
+    opacity: 0.9;
+}
+.bg-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+.bg-success { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
+.bg-warning { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+.bg-info { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+.bg-danger { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
+.bg-purple { background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); }
+.bg-teal { background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%); }
+.bg-orange { background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); }
+.chart-card {
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+}
+.chart-card .card-header {
+    background: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+.progress-ring {
+    width: 150px;
+    height: 150px;
+    margin: 0 auto;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="me-3">
+                        <i class="fa fa-user-circle fa-4x text-primary"></i>
+                    </div>
+                    <div>
+                        <h4 class="mb-1">{{ student.name }}</h4>
+                        <p class="mb-1 text-muted">学号：{{ student.student_id }} | 班级：{{ student.class_name }}</p>
+                        <p class="mb-0 text-muted">专业：{{ student.major }} | 年级：{{ student.grade }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-3 col-md-6">
+        <div class="stat-card bg-primary">
+            <div class="stat-number">{{ stats.total_tasks }}</div>
+            <div class="stat-label">我的任务数</div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="stat-card bg-success">
+            <div class="stat-number">{{ stats.done_tasks }}</div>
+            <div class="stat-label">我的已完成任务</div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="stat-card bg-warning">
+            <div class="stat-number">{{ stats.submitted_reports }}</div>
+            <div class="stat-label">我的日报提交次数</div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="stat-card bg-info">
+            <div class="stat-number">{{ stats.total_bugs_handled }}</div>
+            <div class="stat-label">我的Bug处理数</div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="stat-card bg-purple">
+            <div class="stat-number">{{ stats.total_ai_records }}</div>
+            <div class="stat-label">我的AI使用记录数</div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="stat-card bg-teal">
+            <div class="stat-number">{{ stats.contribution_score }}</div>
+            <div class="stat-label">我的项目贡献度</div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card chart-card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">我的任务状态分布</h5>
+            </div>
+            <div class="card-body">
+                <div id="taskStatusChart" style="height: 350px;"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card chart-card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">任务优先级分布</h5>
+            </div>
+            <div class="card-body">
+                <div id="priorityChart" style="height: 350px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card chart-card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">近7天任务完成情况</h5>
+            </div>
+            <div class="card-body">
+                <div id="taskCompletionTrendChart" style="height: 350px;"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card chart-card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">近7天日报提交情况</h5>
+            </div>
+            <div class="card-body">
+                <div id="dailyReportTrendChart" style="height: 350px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card chart-card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">我报告的Bug状态</h5>
+            </div>
+            <div class="card-body">
+                <div id="reportedBugChart" style="height: 350px;"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card chart-card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">分配给我的Bug状态</h5>
+            </div>
+            <div class="card-body">
+                <div id="assignedBugChart" style="height: 350px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card chart-card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">我的最近任务</h5>
+            </div>
+            <div class="card-body">
+                {% if recent_tasks %}
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>任务标题</th>
+                            <th>状态</th>
+                            <th>优先级</th>
+                            <th>进度</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for task in recent_tasks %}
+                        <tr>
+                            <td>{{ task.title[:20] }}{% if task.title|length > 20 %}...{% endif %}</td>
+                            <td>
+                                {% if task.status == 'todo' %}
+                                <span class="badge bg-secondary">待开始</span>
+                                {% elif task.status == 'in_progress' %}
+                                <span class="badge bg-primary">进行中</span>
+                                {% elif task.status == 'review' %}
+                                <span class="badge bg-info">待测试</span>
+                                {% elif task.status == 'done' %}
+                                <span class="badge bg-success">已完成</span>
+                                {% elif task.status == 'delayed' %}
+                                <span class="badge bg-danger">已延期</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if task.priority == 'high' %}
+                                <span class="badge bg-danger">高</span>
+                                {% elif task.priority == 'medium' %}
+                                <span class="badge bg-warning">中</span>
+                                {% elif task.priority == 'low' %}
+                                <span class="badge bg-success">低</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="progress" style="height: 20px;">
+                                    <div class="progress-bar {% if task.progress >= 80 %}bg-success{% elif task.progress >= 50 %}bg-info{% elif task.progress >= 30 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                         role="progressbar" 
+                                         style="width: {{ task.progress }}%" 
+                                         aria-valuenow="{{ task.progress }}" 
+                                         aria-valuemin="0" 
+                                         aria-valuemax="100">
+                                        {{ task.progress }}%
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p class="text-center text-muted">暂无任务</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card chart-card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">我的最近日报</h5>
+            </div>
+            <div class="card-body">
+                {% if recent_reports %}
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>日期</th>
+                            <th>工作内容</th>
+                            <th>状态</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for report in recent_reports %}
+                        <tr>
+                            <td>{{ report.report_date.strftime('%Y-%m-%d') }}</td>
+                            <td>{{ report.today_work[:30] }}{% if report.today_work|length > 30 %}...{% endif %}</td>
+                            <td>
+                                {% if report.is_submitted %}
+                                <span class="badge bg-success">已提交</span>
+                                {% else %}
+                                <span class="badge bg-warning">未提交</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p class="text-center text-muted">暂无日报</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card chart-card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">我报告的Bug</h5>
+            </div>
+            <div class="card-body">
+                {% if recent_reported_bugs %}
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Bug标题</th>
+                            <th>严重程度</th>
+                            <th>状态</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for bug in recent_reported_bugs %}
+                        <tr>
+                            <td>{{ bug.title[:25] }}{% if bug.title|length > 25 %}...{% endif %}</td>
+                            <td>
+                                {% if bug.severity == 'critical' %}
+                                <span class="badge bg-danger">严重</span>
+                                {% elif bug.severity == 'high' %}
+                                <span class="badge bg-warning">高</span>
+                                {% elif bug.severity == 'medium' %}
+                                <span class="badge bg-info">中</span>
+                                {% elif bug.severity == 'low' %}
+                                <span class="badge bg-success">低</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if bug.status == 'open' %}
+                                <span class="badge bg-secondary">待处理</span>
+                                {% elif bug.status == 'in_progress' %}
+                                <span class="badge bg-primary">处理中</span>
+                                {% elif bug.status == 'fixed' %}
+                                <span class="badge bg-success">已修复</span>
+                                {% elif bug.status == 'verified' %}
+                                <span class="badge bg-info">已验证</span>
+                                {% elif bug.status == 'closed' %}
+                                <span class="badge bg-dark">已关闭</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p class="text-center text-muted">暂无Bug</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card chart-card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">分配给我的Bug</h5>
+            </div>
+            <div class="card-body">
+                {% if recent_assigned_bugs %}
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Bug标题</th>
+                            <th>严重程度</th>
+                            <th>状态</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for bug in recent_assigned_bugs %}
+                        <tr>
+                            <td>{{ bug.title[:25] }}{% if bug.title|length > 25 %}...{% endif %}</td>
+                            <td>
+                                {% if bug.severity == 'critical' %}
+                                <span class="badge bg-danger">严重</span>
+                                {% elif bug.severity == 'high' %}
+                                <span class="badge bg-warning">高</span>
+                                {% elif bug.severity == 'medium' %}
+                                <span class="badge bg-info">中</span>
+                                {% elif bug.severity == 'low' %}
+                                <span class="badge bg-success">低</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if bug.status == 'open' %}
+                                <span class="badge bg-secondary">待处理</span>
+                                {% elif bug.status == 'in_progress' %}
+                                <span class="badge bg-primary">处理中</span>
+                                {% elif bug.status == 'fixed' %}
+                                <span class="badge bg-success">已修复</span>
+                                {% elif bug.status == 'verified' %}
+                                <span class="badge bg-info">已验证</span>
+                                {% elif bug.status == 'closed' %}
+                                <span class="badge bg-dark">已关闭</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p class="text-center text-muted">暂无Bug</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var taskStatusChart = echarts.init(document.getElementById('taskStatusChart'));
+    taskStatusChart.setOption({
+        tooltip: { trigger: 'item' },
+        legend: { orient: 'vertical', left: 'left' },
+        series: [{
+            name: '任务状态',
+            type: 'pie',
+            radius: ['40%', '70%'],
+            avoidLabelOverlap: false,
+            itemStyle: {
+                borderRadius: 10,
+                borderColor: '#fff',
+                borderWidth: 2
+            },
+            label: { show: false, position: 'center' },
+            emphasis: {
+                label: { show: true, fontSize: '20', fontWeight: 'bold' }
+            },
+            data: {{ task_status_data | tojson }}
+        }]
+    });
+
+    var priorityChart = echarts.init(document.getElementById('priorityChart'));
+    priorityChart.setOption({
+        tooltip: { trigger: 'item' },
+        legend: { orient: 'vertical', left: 'left' },
+        series: [{
+            name: '优先级',
+            type: 'pie',
+            radius: ['40%', '70%'],
+            avoidLabelOverlap: false,
+            itemStyle: {
+                borderRadius: 10,
+                borderColor: '#fff',
+                borderWidth: 2
+            },
+            label: { show: false, position: 'center' },
+            emphasis: {
+                label: { show: true, fontSize: '20', fontWeight: 'bold' }
+            },
+            data: {{ priority_data | tojson }}
+        }]
+    });
+
+    var taskCompletionTrendData = {{ task_completion_trend | tojson }};
+    var taskCompletionTrendChart = echarts.init(document.getElementById('taskCompletionTrendChart'));
+    taskCompletionTrendChart.setOption({
+        tooltip: { trigger: 'axis' },
+        grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+        xAxis: { type: 'category', data: taskCompletionTrendData.map(item => item.date), boundaryGap: false },
+        yAxis: { type: 'value' },
+        series: [{
+            name: '完成任务数',
+            type: 'line',
+            data: taskCompletionTrendData.map(item => item.count),
+            smooth: true,
+            areaStyle: {
+                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                    { offset: 0, color: 'rgba(75, 192, 192, 0.5)' },
+                    { offset: 1, color: 'rgba(75, 192, 192, 0.1)' }
+                ])
+            },
+            itemStyle: { color: '#4bc0c0' }
+        }]
+    });
+
+    var dailyReportTrendData = {{ daily_report_trend | tojson }};
+    var dailyReportTrendChart = echarts.init(document.getElementById('dailyReportTrendChart'));
+    dailyReportTrendChart.setOption({
+        tooltip: { trigger: 'axis' },
+        grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+        xAxis: { type: 'category', data: dailyReportTrendData.map(item => item.date), boundaryGap: false },
+        yAxis: { type: 'value' },
+        series: [{
+            name: '日报提交数',
+            type: 'line',
+            data: dailyReportTrendData.map(item => item.count),
+            smooth: true,
+            areaStyle: {
+                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                    { offset: 0, color: 'rgba(54, 162, 235, 0.5)' },
+                    { offset: 1, color: 'rgba(54, 162, 235, 0.1)' }
+                ])
+            },
+            itemStyle: { color: '#36a2eb' }
+        }]
+    });
+
+    var reportedBugChart = echarts.init(document.getElementById('reportedBugChart'));
+    reportedBugChart.setOption({
+        tooltip: { trigger: 'item' },
+        legend: { orient: 'vertical', left: 'left' },
+        series: [{
+            name: 'Bug状态',
+            type: 'pie',
+            radius: ['40%', '70%'],
+            avoidLabelOverlap: false,
+            itemStyle: {
+                borderRadius: 10,
+                borderColor: '#fff',
+                borderWidth: 2
+            },
+            label: { show: false, position: 'center' },
+            emphasis: {
+                label: { show: true, fontSize: '20', fontWeight: 'bold' }
+            },
+            data: {{ reported_bug_status | tojson }}
+        }]
+    });
+
+    var assignedBugChart = echarts.init(document.getElementById('assignedBugChart'));
+    assignedBugChart.setOption({
+        tooltip: { trigger: 'item' },
+        legend: { orient: 'vertical', left: 'left' },
+        series: [{
+            name: 'Bug状态',
+            type: 'pie',
+            radius: ['40%', '70%'],
+            avoidLabelOverlap: false,
+            itemStyle: {
+                borderRadius: 10,
+                borderColor: '#fff',
+                borderWidth: 2
+            },
+            label: { show: false, position: 'center' },
+            emphasis: {
+                label: { show: true, fontSize: '20', fontWeight: 'bold' }
+            },
+            data: {{ assigned_bug_status | tojson }}
+        }]
+    });
+
+    window.addEventListener('resize', function() {
+        taskStatusChart.resize();
+        priorityChart.resize();
+        taskCompletionTrendChart.resize();
+        dailyReportTrendChart.resize();
+        reportedBugChart.resize();
+        assignedBugChart.resize();
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+
+{% block title %}Bug管理{% endblock %}
+
+{% block page_title %}Bug管理{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2><i class="fa fa-bug"></i> Bug管理</h2>
+                <div>
+                    <a href="{{ url_for('project.add_bug') }}" class="btn btn-primary">
+                        <i class="fa fa-plus"></i> 提交Bug
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 筛选器 -->
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="GET" class="row g-3">
+                        <div class="col-md-3">
+                            <label for="team_id" class="form-label">小组筛选</label>
+                            <select name="team_id" id="team_id" class="form-select">
+                                <option value="">全部小组</option>
+                                {% for team in teams %}
+                                <option value="{{ team.id }}" {% if request.args.get('team_id')|int == team.id %}selected{% endif %}>
+                                    {{ team.team_name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="status" class="form-label">状态筛选</label>
+                            <select name="status" id="status" class="form-select">
+                                <option value="">全部状态</option>
+                                <option value="open" {% if request.args.get('status') == 'open' %}selected{% endif %}>新建</option>
+                                <option value="in_progress" {% if request.args.get('status') == 'in_progress' %}selected{% endif %}>修复中</option>
+                                <option value="fixed" {% if request.args.get('status') == 'fixed' %}selected{% endif %}>已修复</option>
+                                <option value="verified" {% if request.args.get('status') == 'verified' %}selected{% endif %}>已验证</option>
+                                <option value="closed" {% if request.args.get('status') == 'closed' %}selected{% endif %}>已关闭</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="severity" class="form-label">严重程度</label>
+                            <select name="severity" id="severity" class="form-select">
+                                <option value="">全部级别</option>
+                                <option value="critical" {% if request.args.get('severity') == 'critical' %}selected{% endif %}>致命</option>
+                                <option value="high" {% if request.args.get('severity') == 'high' %}selected{% endif %}>严重</option>
+                                <option value="medium" {% if request.args.get('severity') == 'medium' %}selected{% endif %}>一般</option>
+                                <option value="low" {% if request.args.get('severity') == 'low' %}selected{% endif %}>轻微</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <button type="submit" class="btn btn-primary mt-4">
+                                <i class="fa fa-filter"></i> 应用筛选
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bug列表 -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title">Bug列表</h5>
+        </div>
+        <div class="card-body">
+            {% if pagination.items %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Bug编号</th>
+                            <th>标题</th>
+                            <th>严重程度</th>
+                            <th>状态</th>
+                            <th>提出人</th>
+                            <th>负责人</th>
+                            <th>创建时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for bug in pagination.items %}
+                        <tr>
+                            <td>{{ bug.bug_code }}</td>
+                            <td>{{ bug.title }}</td>
+                            <td>
+                                <span class="badge {% if bug.severity == 'critical' %}bg-danger{% elif bug.severity == 'high' %}bg-warning{% elif bug.severity == 'medium' %}bg-info{% else %}bg-secondary{% endif %}">
+                                    {{ {'critical': '致命', 'high': '严重', 'medium': '一般', 'low': '轻微'}[bug.severity] }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge {% if bug.status == 'open' %}bg-secondary{% elif bug.status == 'in_progress' %}bg-primary{% elif bug.status == 'fixed' %}bg-info{% elif bug.status == 'verified' %}bg-success{% else %}bg-dark{% endif %}">
+                                    {{ {'open': '新建', 'in_progress': '修复中', 'fixed': '已修复', 'verified': '已验证', 'closed': '已关闭'}[bug.status] }}
+                                </span>
+                            </td>
+                            <td>{{ bug.reporter.name if bug.reporter else '-' }}</td>
+                            <td>{{ bug.assignee.name if bug.assignee else '-' }}</td>
+                            <td>{{ bug.created_at.strftime('%m-%d %H:%M') }}</td>
+                            <td>
+                                <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#bugModal{{ bug.id }}">
+                                    <i class="fa fa-eye"></i> 查看
+                                </button>
+                                <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#updateStatusModal{{ bug.id }}">
+                                    <i class="fa fa-edit"></i> 更新状态
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- 分页 -->
+            {% if pagination.pages > 1 %}
+            <div class="pagination">
+                {{ pagination.links }}
+            </div>
+            {% endif %}
+            {% else %}
+            <div class="alert alert-info">
+                <i class="fa fa-info-circle"></i> 暂无Bug记录
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Bug详情模态框 -->
+    {% for bug in pagination.items %}
+    <div class="modal fade" id="bugModal{{ bug.id }}" tabindex="-1" aria-labelledby="bugModalLabel{{ bug.id }}" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="bugModalLabel{{ bug.id }}">{{ bug.bug_code }} - {{ bug.title }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">严重程度：</label>
+                                <span class="badge {% if bug.severity == 'critical' %}bg-danger{% elif bug.severity == 'high' %}bg-warning{% elif bug.severity == 'medium' %}bg-info{% else %}bg-secondary{% endif %}">
+                                    {{ {'critical': '致命', 'high': '严重', 'medium': '一般', 'low': '轻微'}[bug.severity] }}
+                                </span>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">优先级：</label>
+                                <span class="badge {% if bug.priority == 'urgent' %}bg-danger{% elif bug.priority == 'high' %}bg-warning{% elif bug.priority == 'medium' %}bg-info{% else %}bg-secondary{% endif %}">
+                                    {{ {'urgent': '紧急', 'high': '高', 'medium': '中', 'low': '低'}[bug.priority] }}
+                                </span>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">状态：</label>
+                                <span class="badge {% if bug.status == 'open' %}bg-secondary{% elif bug.status == 'in_progress' %}bg-primary{% elif bug.status == 'fixed' %}bg-info{% elif bug.status == 'verified' %}bg-success{% else %}bg-dark{% endif %}">
+                                    {{ {'open': '新建', 'in_progress': '修复中', 'fixed': '已修复', 'verified': '已验证', 'closed': '已关闭'}[bug.status] }}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">提出人：</label>
+                                <span>{{ bug.reporter.name if bug.reporter else '-' }}</span>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">负责人：</label>
+                                <span>{{ bug.assignee.name if bug.assignee else '-' }}</span>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">环境：</label>
+                                <span>{{ bug.environment or '-' }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Bug描述：</label>
+                        <p>{{ bug.description or '-' }}</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">复现步骤：</label>
+                        <p>{{ bug.reproduction_steps or '-' }}</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">期望结果：</label>
+                        <p>{{ bug.expected_result or '-' }}</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">实际结果：</label>
+                        <p>{{ bug.actual_result or '-' }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 更新状态模态框 -->
+    <div class="modal fade" id="updateStatusModal{{ bug.id }}" tabindex="-1" aria-labelledby="updateStatusModalLabel{{ bug.id }}" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="updateStatusModalLabel{{ bug.id }}">更新Bug状态</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form action="{{ url_for('project.update_bug_status', bug_id=bug.id) }}" method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <div class="mb-3">
+                            <label class="form-label">状态</label>
+                            <select name="status" class="form-select">
+                                <option value="open" {% if bug.status == 'open' %}selected{% endif %}>新建</option>
+                                <option value="in_progress" {% if bug.status == 'in_progress' %}selected{% endif %}>修复中</option>
+                                <option value="fixed" {% if bug.status == 'fixed' %}selected{% endif %}>已修复</option>
+                                <option value="verified" {% if bug.status == 'verified' %}selected{% endif %}>已验证</option>
+                                <option value="closed" {% if bug.status == 'closed' %}selected{% endif %}>已关闭</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">负责人</label>
+                            <select name="assigned_to" class="form-select">
+                                <option value="">未分配</option>
+                                {% for student in students %}
+                                <option value="{{ student.id }}" {% if bug.assigned_to == student.id %}selected{% endif %}>
+                                    {{ student.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary">更新状态</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

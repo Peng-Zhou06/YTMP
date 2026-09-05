@@ -1,0 +1,245 @@
+{% extends 'base.html' %}
+
+{% block title %}仪表盘 - 云智实训管理平台{% endblock %}
+
+{% block page_title %}系统仪表盘{% endblock %}
+
+{% block extra_css %}
+<script src="https://cdn.staticfile.org/echarts/5.4.3/echarts.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- 统计卡片 -->
+    <div class="col-lg-3 col-md-6">
+        <div class="stat-card bg-primary">
+            <div class="stat-number">{{ stats.total_students }}</div>
+            <div class="stat-label">总学生数</div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="stat-card bg-success">
+            <div class="stat-number">{{ stats.total_courses }}</div>
+            <div class="stat-label">总课程数</div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="stat-card bg-warning">
+            <div class="stat-number">{{ stats.total_projects }}</div>
+            <div class="stat-label">实训项目数</div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="stat-card bg-info">
+            <div class="stat-number">{{ stats.total_teams }}</div>
+            <div class="stat-label">小组数量</div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="stat-card bg-danger">
+            <div class="stat-number">{{ stats.total_tasks }}</div>
+            <div class="stat-label">任务总数</div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="stat-card bg-purple">
+            <div class="stat-number">{{ stats.completed_tasks }}</div>
+            <div class="stat-label">已完成任务</div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="stat-card bg-teal">
+            <div class="stat-number">{{ stats.total_bugs }}</div>
+            <div class="stat-label">Bug总数</div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="stat-card bg-orange">
+            <div class="stat-number">{{ '%.1f' % stats.daily_report_rate }}%</div>
+            <div class="stat-label">日报提交率</div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- 任务状态分布 -->
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">任务状态分布</h5>
+            </div>
+            <div class="card-body">
+                <div id="taskStatusChart" style="height: 300px;"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 项目进度 -->
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">项目进度排行</h5>
+            </div>
+            <div class="card-body">
+                <div id="projectProgressChart" style="height: 300px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- 最近学生 -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">最近添加的学生</h5>
+                <a href="{{ url_for('student.students_list') }}" class="btn btn-sm btn-primary float-end">查看全部</a>
+            </div>
+            <div class="card-body">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>学号</th>
+                            <th>姓名</th>
+                            <th>班级</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for student in recent_students %}                        <tr>
+                            <td>{{ student.student_id }}</td>
+                            <td>{{ student.name }}</td>
+                            <td>{{ student.class_name }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 最近项目 -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">最近项目</h5>
+                <a href="{{ url_for('project.projects_list') }}" class="btn btn-sm btn-primary float-end">查看全部</a>
+            </div>
+            <div class="card-body">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>项目名称</th>
+                            <th>状态</th>
+                            <th>小组数</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for project in recent_projects %}
+                        <tr>
+                            <td>{{ project.name }}</td>
+                            <td>
+                                {% if project.status == 'planning' %}
+                                <span class="badge bg-secondary">规划中</span>
+                                {% elif project.status == 'ongoing' %}
+                                <span class="badge bg-primary">进行中</span>
+                                {% elif project.status == 'completed' %}
+                                <span class="badge bg-success">已完成</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ project.teams|length }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 最近操作日志 -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">最近操作日志</h5>
+                <a href="{{ url_for('system.logs_list') }}" class="btn btn-sm btn-primary float-end">查看全部</a>
+            </div>
+            <div class="card-body">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>操作</th>
+                            <th>资源</th>
+                            <th>时间</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in recent_logs %}
+                        <tr>
+                            <td>{{ log.action }}</td>
+                            <td>{{ log.resource }}</td>
+                            <td>{{ log.created_at.strftime('%m-%d %H:%M') }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 任务状态分布图
+    var taskStatusChart = echarts.init(document.getElementById('taskStatusChart'));
+    taskStatusChart.setOption({
+        tooltip: { trigger: 'item' },
+        legend: { orient: 'vertical', left: 'left' },
+        series: [{
+            name: '任务状态',
+            type: 'pie',
+            radius: '50%',
+            data: [
+                { value: {{ stats.task_todo }}, name: '待开始' },
+                { value: {{ stats.task_in_progress }}, name: '进行中' },
+                { value: {{ stats.task_review }}, name: '待测试' },
+                { value: {{ stats.task_done }}, name: '已完成' },
+                { value: {{ stats.task_delayed }}, name: '已延期' }
+            ],
+            emphasis: { itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: 'rgba(0, 0, 0, 0.5)' }}
+        }]
+    });
+
+    // 项目进度排行
+    var projectProgressChart = echarts.init(document.getElementById('projectProgressChart'));
+    projectProgressChart.setOption({
+        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+        grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+        xAxis: { type: 'value', max: 100 },
+        yAxis: { 
+            type: 'category', 
+            data: {{ project_names | tojson }}
+        },
+        series: [{
+            name: '完成率',
+            type: 'bar',
+            data: {{ project_progress | tojson }},
+            itemStyle: {
+                color: function(params) {
+                    var percent = params.value;
+                    if (percent >= 80) return '#28a745';
+                    if (percent >= 50) return '#17a2b8';
+                    if (percent >= 30) return '#ffc107';
+                    return '#dc3545';
+                }
+            }
+        }]
+    });
+
+    window.addEventListener('resize', function() {
+        taskStatusChart.resize();
+        projectProgressChart.resize();
+    });
+});
+</script>
+{% endblock %}

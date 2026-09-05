@@ -1,0 +1,164 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}实训项目管理{% endblock %}
+
+{% block page_title %}实训项目管理{% endblock %}
+
+{% block page_subtitle %}管理所有实训项目{% endblock %}
+
+{% block content %}
+<!-- 搜索筛选栏 -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-3">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="col-md-3">
+                <input type="text" name="keyword" class="form-control" placeholder="搜索项目名称或编号" value="{{ request.args.get('keyword', '') }}">
+            </div>
+            <div class="col-md-2">
+                <select name="status" class="form-select">
+                    <option value="">全部状态</option>
+                    <option value="planning" {% if request.args.get('status') == 'planning' %}selected{% endif %}>规划中</option>
+                    <option value="ongoing" {% if request.args.get('status') == 'ongoing' %}selected{% endif %}>进行中</option>
+                    <option value="completed" {% if request.args.get('status') == 'completed' %}selected{% endif %}>已完成</option>
+                    <option value="archived" {% if request.args.get('status') == 'archived' %}selected{% endif %}>已归档</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="course_id" class="form-select">
+                    <option value="">全部课程</option>
+                    {% for course in courses %}
+                    <option value="{{ course.id }}" {% if request.args.get('course_id') == course.id|string %}selected{% endif %}>{{ course.course_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="teacher_id" class="form-select">
+                    <option value="">全部教师</option>
+                    {% for teacher in teachers %}
+                    <option value="{{ teacher.id }}" {% if request.args.get('teacher_id') == teacher.id|string %}selected{% endif %}>{{ teacher.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary"><i class="fa fa-search"></i> 搜索</button>
+                <a href="{{ url_for('project.projects_list') }}" class="btn btn-secondary"><i class="fa fa-refresh"></i> 重置</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 项目列表卡片 -->
+<div class="card">
+    <div class="card-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h5 class="card-title"><i class="fa fa-project-diagram" style="color: var(--primary-color);"></i> 实训项目列表</h5>
+            <a href="{{ url_for('project.add_project') }}" class="btn btn-primary">
+                <i class="fa fa-plus"></i> 创建项目
+            </a>
+        </div>
+    </div>
+    <div class="card-body">
+        {% if pagination and pagination.items %}
+        <div class="table-responsive">
+            <table class="table table-modern">
+                <thead>
+                    <tr>
+                        <th>项目编号</th>
+                        <th>项目名称</th>
+                        <th>课程</th>
+                        <th>负责教师</th>
+                        <th>开始时间</th>
+                        <th>结束时间</th>
+                        <th>状态</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for project in pagination.items %}
+                    <tr>
+                        <td>{{ project.project_code }}</td>
+                        <td><strong>{{ project.name }}</strong></td>
+                        <td>{{ project.course.course_name if project.course else '-' }}</td>
+                        <td>{{ project.teacher.name if project.teacher else '-' }}</td>
+                        <td>{{ project.start_date.strftime('%Y-%m-%d') }}</td>
+                        <td>{{ project.end_date.strftime('%Y-%m-%d') }}</td>
+                        <td>
+                            {% if project.status == 'planning' %}
+                                <span class="badge badge-planning">规划中</span>
+                            {% elif project.status == 'ongoing' %}
+                                <span class="badge badge-ongoing">进行中</span>
+                            {% elif project.status == 'completed' %}
+                                <span class="badge badge-completed">已完成</span>
+                            {% elif project.status == 'archived' %}
+                                <span class="badge badge-archived">已归档</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="action-btns">
+                                <a href="{{ url_for('project.project_detail', project_id=project.id) }}" class="btn btn-sm btn-info">
+                                    <i class="fa fa-eye"></i> 查看
+                                </a>
+                                {% if current_user.role in ['admin', 'teacher'] %}
+                                <a href="{{ url_for('project.edit_project', project_id=project.id) }}" class="btn btn-sm btn-primary">
+                                    <i class="fa fa-edit"></i> 编辑
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 分页 -->
+        {% if pagination.pages > 1 %}
+        <nav aria-label="Page navigation" class="mt-4">
+            <ul class="pagination pagination-modern justify-content-center">
+                {% if pagination.has_prev %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('project.projects_list', page=pagination.prev_num) }}">上一页</a>
+                </li>
+                {% endif %}
+
+                {% for page_num in pagination.iter_pages() %}
+                    {% if page_num %}
+                        {% if page_num != pagination.page %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('project.projects_list', page=page_num) }}">{{ page_num }}</a>
+                        </li>
+                        {% else %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ page_num }}</span>
+                        </li>
+                        {% endif %}
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">...</span>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if pagination.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('project.projects_list', page=pagination.next_num) }}">下一页</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+
+        {% else %}
+        <div class="empty-state">
+            <i class="fa fa-project-diagram"></i>
+            <h5>暂无项目数据</h5>
+            <p class="text-muted">还没有创建任何实训项目</p>
+            <a href="{{ url_for('project.add_project') }}" class="btn btn-primary">
+                <i class="fa fa-plus"></i> 创建第一个项目
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

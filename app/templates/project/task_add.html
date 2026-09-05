@@ -1,0 +1,271 @@
+{% extends "base.html" %}
+
+{% block title %}新建任务{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('project.projects_list') }}">项目</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('project.teams_list') }}">小组</a></li>
+                    <li class="breadcrumb-item active">新建任务</li>
+                </ol>
+            </nav>
+            
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <a href="javascript:history.back()" class="btn btn-sm btn-outline-secondary me-2">
+                        <i class="fa fa-arrow-left"></i> 返回
+                    </a>
+                    <h2 class="d-inline mb-0"><i class="fas fa-plus"></i> 新建任务</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">任务信息</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('project.add_task') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                {{ form.title.label(class="form-label") }}
+                                {{ form.title(class="form-control", placeholder="输入任务标题") }}
+                                {% for error in form.title.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            
+                            <div class="col-md-6">
+                                {{ form.task_code.label(class="form-label") }}
+                                {{ form.task_code(class="form-control", placeholder="如：TASK-001") }}
+                                {% for error in form.task_code.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.description.label(class="form-label") }}
+                            {{ form.description(class="form-control", rows=4, placeholder="详细描述任务内容") }}
+                            {% for error in form.description.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                {{ form.team_id.label(class="form-label") }}
+                                <select name="team_id" class="form-select">
+                                    <option value="">请选择团队</option>
+                                    {% for team in teams %}
+                                    <option value="{{ team.id }}">{{ team.team_name }}</option>
+                                    {% endfor %}
+                                </select>
+                                {% for error in form.team_id.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            
+                            <div class="col-md-6">
+                                {{ form.assigned_to.label(class="form-label") }}
+                                <select name="assigned_to" class="form-select">
+                                    <option value="">不分配</option>
+                                    {% for student in students %}
+                                    <option value="{{ student.id }}">{{ student.student_id }} - {{ student.name }}</option>
+                                    {% endfor %}
+                                </select>
+                                <small class="text-muted">显示格式：学号 - 姓名</small>
+                                {% for error in form.assigned_to.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                {{ form.priority.label(class="form-label") }}
+                                {{ form.priority(class="form-select") }}
+                                {% for error in form.priority.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            
+                            <div class="col-md-4">
+                                {{ form.status.label(class="form-label") }}
+                                {{ form.status(class="form-select") }}
+                                {% for error in form.status.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            
+                            <div class="col-md-4">
+                                {{ form.progress.label(class="form-label") }}
+                                {{ form.progress(class="form-control", placeholder="0-100") }}
+                                {% for error in form.progress.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                {{ form.estimated_hours.label(class="form-label") }}
+                                {{ form.estimated_hours(class="form-control", step="0.5") }}
+                                {% for error in form.estimated_hours.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            
+                            <div class="col-md-4">
+                                {{ form.start_date.label(class="form-label") }}
+                                {{ form.start_date(class="form-control", type="datetime-local") }}
+                                {% for error in form.start_date.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            
+                            <div class="col-md-4">
+                                {{ form.due_date.label(class="form-label") }}
+                                {{ form.due_date(class="form-control", type="datetime-local") }}
+                                {% for error in form.due_date.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.tags.label(class="form-label") }}
+                            {{ form.tags(class="form-control", placeholder="标签，用逗号分隔，如：前端,重要,紧急") }}
+                            {% for error in form.tags.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                {{ form.actual_hours.label(class="form-label") }}
+                                {{ form.actual_hours(class="form-control", step="0.5") }}
+                                {% for error in form.actual_hours.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            
+                            <div class="col-md-6">
+                                {{ form.completion_note.label(class="form-label") }}
+                                {{ form.completion_note(class="form-control", rows=2) }}
+                                {% for error in form.completion_note.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                {{ form.screenshots.label(class="form-label") }}
+                                {{ form.screenshots(class="form-control", placeholder="截图URL，多个用逗号分隔") }}
+                                {% for error in form.screenshots.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            
+                            <div class="col-md-6">
+                                {{ form.related_bug_ids.label(class="form-label") }}
+                                {{ form.related_bug_ids(class="form-control", placeholder="Bug ID，多个用逗号分隔") }}
+                                {% for error in form.related_bug_ids.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('project.tasks_list') }}" class="btn btn-secondary">取消</a>
+                            {{ form.submit(class="btn btn-primary") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-lightbulb"></i> 提示</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success"></i> 
+                            任务编号建议按格式填写，如：TASK-001
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success"></i> 
+                            优先级分为：低、中、高、紧急
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success"></i> 
+                            状态包括：待开始、进行中、待测试、已完成
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success"></i> 
+                            预估工时以小时为单位
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success"></i> 
+                            标签可以帮助分类和筛选任务
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// 自动设置任务编号和默认时间
+document.addEventListener('DOMContentLoaded', function() {
+    const taskCodeInput = document.querySelector('#task_code');
+    if (taskCodeInput && !taskCodeInput.value) {
+        // 生成默认任务编号（可以根据实际情况调整）
+        const timestamp = Date.now().toString().slice(-6);
+        taskCodeInput.value = 'TASK-' + timestamp;
+    }
+    
+    // 设置默认开始时间为当前时间
+    const startDateInput = document.querySelector('#start_date');
+    if (startDateInput && !startDateInput.value) {
+        const now = new Date();
+        // 转换为本地时区的datetime-local格式: YYYY-MM-DDTHH:MM
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        startDateInput.value = `${year}-${month}-${day}T${hours}:${minutes}`;
+    }
+    
+    // 设置默认截止时间为7天后
+    const dueDateInput = document.querySelector('#due_date');
+    if (dueDateInput && !dueDateInput.value) {
+        const dueDate = new Date();
+        dueDate.setDate(dueDate.getDate() + 7);
+        // 转换为本地时区的datetime-local格式: YYYY-MM-DDTHH:MM
+        const year = dueDate.getFullYear();
+        const month = String(dueDate.getMonth() + 1).padStart(2, '0');
+        const day = String(dueDate.getDate()).padStart(2, '0');
+        const hours = String(dueDate.getHours()).padStart(2, '0');
+        const minutes = String(dueDate.getMinutes()).padStart(2, '0');
+        dueDateInput.value = `${year}-${month}-${day}T${hours}:${minutes}`;
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+
+{% block title %}学生管理 - 学院专业班级{% endblock %}
+
+{% block page_title %}学生管理{% endblock %}
+
+{% block content %}
+<div class="row mb-3">
+    <div class="col-md-12 d-flex justify-content-between align-items-center">
+        <h4 class="mb-0"><i class="fa fa-users text-primary"></i> 学院专业班级</h4>
+        <div>
+            <a href="{{ url_for('dept.departments_list') }}" class="btn btn-sm btn-info me-2">
+                <i class="fa fa-cog"></i> 管理学院专业
+            </a>
+            <a href="{{ url_for('student.import_students') }}" class="btn btn-sm btn-success me-2">
+                <i class="fa fa-upload"></i> 导入
+            </a>
+            <a href="{{ url_for('student.export_students') }}" class="btn btn-sm btn-primary me-2">
+                <i class="fa fa-download"></i> 导出
+            </a>
+            <a href="{{ url_for('student.add_student') }}" class="btn btn-sm btn-primary">
+                <i class="fa fa-plus"></i> 添加学生
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- 学院列表 -->
+<div class="row">
+    {% for dept in departments %}
+    <div class="col-md-12 mb-4">
+        <div class="card shadow">
+            <div class="card-header py-3" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                <h5 class="m-0">
+                    <i class="fa {{ dept.icon }}"></i> {{ dept.name }}
+                    <span class="badge bg-light text-dark ms-2">{{ dept_students.get(dept.name, {}).get('total', 0) }}人</span>
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for major in dept.majors if major.is_active %}
+                    {% if dept_students.get(dept.name, {}).get(major.name, {}).get('total', 0) > 0 %}
+                    <div class="col-md-6 col-lg-4 mb-3">
+                        <div class="card h-100 border-left-primary">
+                            <div class="card-header bg-light">
+                                <h6 class="m-0 text-primary">
+                                    <i class="fa fa-book"></i> {{ major.name }}
+                                    <span class="badge bg-primary ms-2">{{ dept_students[dept.name][major.name].total }}人</span>
+                                </h6>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="list-group list-group-flush">
+                                    {% for grade, grades_data in dept_students[dept.name][major.name].grades.items()|sort(reverse=true) %}
+                                    <div class="list-group-item">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <strong class="text-success"><i class="fa fa-calendar"></i> {{ grade }}级</strong>
+                                            <span class="badge bg-success">{{ grades_data.total }}人</span>
+                                        </div>
+                                        <div class="row">
+                                            {% for class_name, count in grades_data.classes.items()|sort %}
+                                            <div class="col-6 mb-1">
+                                                <a href="{{ url_for('student.students_by_class', department=dept.name, major=major.name, class_name=class_name) }}" class="text-decoration-none small">
+                                                    <i class="fa fa-users text-muted"></i> {{ class_name }}班 ({{ count }}人)
+                                                </a>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<style>
+.border-left-primary {
+    border-left: 4px solid #4e73df;
+}
+.card-header h5, .card-header h6 {
+    font-weight: 600;
+}
+.list-group-item {
+    border: none;
+    border-bottom: 1px solid #f0f0f0;
+}
+.list-group-item:last-child {
+    border-bottom: none;
+}
+</style>
+{% endblock %}

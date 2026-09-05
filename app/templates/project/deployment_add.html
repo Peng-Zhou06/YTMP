@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block title %}添加部署记录{% endblock %}
+
+{% block page_title %}添加部署记录{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('project.deployments_list') }}">部署管理</a></li>
+                    <li class="breadcrumb-item active">添加部署记录</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title">添加部署记录</h5>
+        </div>
+        <div class="card-body">
+            <form method="POST">
+                {{ form.csrf_token }}
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label">所属小组</label>
+                            <select name="team_id" id="team_id" class="form-select" required>
+                                <option value="">请选择小组</option>
+                                {% for team in teams %}
+                                <option value="{{ team.id }}">{{ team.team_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            {{ form.environment.label(class="form-label") }}
+                            {{ form.environment(class="form-select") }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            {{ form.version.label(class="form-label") }}
+                            {{ form.version(class="form-control", placeholder="如：v1.0.0") }}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            {{ form.deploy_url.label(class="form-label") }}
+                            {{ form.deploy_url(class="form-control", placeholder="https://example.com") }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            {{ form.commit_hash.label(class="form-label") }}
+                            {{ form.commit_hash(class="form-control", placeholder="Git commit hash") }}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label">部署人</label>
+                            <select name="deployed_by" id="deployed_by" class="form-select" required>
+                                <option value="">请选择部署人</option>
+                                {% for student in students %}
+                                <option value="{{ student.id }}">{{ student.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    {{ form.notes.label(class="form-label") }}
+                    {{ form.notes(class="form-control", rows=4, placeholder="部署说明...") }}
+                </div>
+
+                <button type="submit" class="btn btn-primary">
+                    <i class="fa fa-save"></i> 提交部署
+                </button>
+                <a href="{{ url_for('project.deployments_list') }}" class="btn btn-secondary">
+                    <i class="fa fa-arrow-left"></i> 返回
+                </a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

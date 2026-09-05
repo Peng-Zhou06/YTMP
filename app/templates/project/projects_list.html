@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}项目列表 - 云智实训管理平台{% endblock %}
+
+{% block page_title %}项目列表{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <div>
+            <a href="javascript:history.back()" class="btn btn-sm btn-outline-secondary me-2">
+                <i class="fa fa-arrow-left"></i> 返回
+            </a>
+            <h5 class="mb-0 d-inline">所有项目</h5>
+        </div>
+        {% if current_user.role in ['admin', 'teacher'] %}
+        <a href="{{ url_for('project.add_project') }}" class="btn btn-primary btn-sm">
+            <i class="fa fa-plus"></i> 创建项目
+        </a>
+        {% endif %}
+    </div>
+    <div class="card-body">
+        {% if pagination and pagination.items %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>项目编号</th>
+                        <th>项目名称</th>
+                        <th>课程</th>
+                        <th>负责教师</th>
+                        <th>开始时间</th>
+                        <th>结束时间</th>
+                        <th>状态</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for project in pagination.items %}
+                    <tr>
+                        <td>{{ project.project_code }}</td>
+                        <td>{{ project.name }}</td>
+                        <td>{{ project.course.course_name if project.course else '-' }}</td>
+                        <td>{{ project.teacher.name if project.teacher else '-' }}</td>
+                        <td>{{ project.start_date.strftime('%Y-%m-%d') }}</td>
+                        <td>{{ project.end_date.strftime('%Y-%m-%d') }}</td>
+                        <td>
+                            {% if project.status == 'planning' %}
+                                <span class="badge bg-secondary">规划中</span>
+                            {% elif project.status == 'ongoing' %}
+                                <span class="badge bg-primary">进行中</span>
+                            {% elif project.status == 'completed' %}
+                                <span class="badge bg-success">已完成</span>
+                            {% elif project.status == 'archived' %}
+                                <span class="badge bg-dark">已归档</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{{ url_for('project.project_detail', project_id=project.id) }}" 
+                               class="btn btn-sm btn-info">
+                                <i class="fa fa-eye"></i> 查看
+                            </a>
+                            {% if current_user.role in ['admin', 'teacher'] %}
+                            <a href="{{ url_for('project.edit_project', project_id=project.id) }}" 
+                               class="btn btn-sm btn-warning">
+                                <i class="fa fa-edit"></i> 编辑
+                            </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- 分页 -->
+        {% if pagination.pages > 1 %}
+        <nav aria-label="Page navigation">
+            <ul class="pagination justify-content-center">
+                {% if pagination.has_prev %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('project.projects_list', page=pagination.prev_num) }}">上一页</a>
+                </li>
+                {% endif %}
+                
+                {% for page_num in pagination.iter_pages() %}
+                    {% if page_num %}
+                        {% if page_num != pagination.page %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('project.projects_list', page=page_num) }}">{{ page_num }}</a>
+                        </li>
+                        {% else %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ page_num }}</span>
+                        </li>
+                        {% endif %}
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">...</span>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if pagination.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('project.projects_list', page=pagination.next_num) }}">下一页</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+        
+        {% else %}
+        <div class="alert alert-info">
+            <i class="fa fa-info-circle"></i> 暂无项目数据
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

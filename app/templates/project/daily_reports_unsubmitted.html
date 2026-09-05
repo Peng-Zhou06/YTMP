@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}未提交日报提醒{% endblock %}
+
+{% block page_title %}未提交日报提醒{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('project.daily_reports_list') }}">日报管理</a></li>
+                    <li class="breadcrumb-item active">未提交日报提醒</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title">未提交日报提醒 - {{ today.strftime('%Y-%m-%d') }}</h5>
+        </div>
+        <div class="card-body">
+            {% if unsubmitted_by_team %}
+            {% for team_id, data in unsubmitted_by_team.items() %}
+            <div class="mb-4 p-4 bg-warning-light rounded border border-warning">
+                <h6 class="text-warning"><i class="fa fa-users"></i> {{ data.team.team_name }}</h6>
+                <p class="text-sm text-muted">未提交日报人数：{{ data.students|length }} 人</p>
+                <div class="row">
+                    {% for student in data.students %}
+                    <div class="col-md-3 mb-2">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <p class="mb-0">{{ student.name }}</p>
+                                <p class="text-sm text-muted">{{ student.student_id }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <div class="alert alert-success">
+                <i class="fa fa-check-circle"></i> 今日所有学生均已提交日报！
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,239 @@
+{% extends 'base.html' %}
+
+{% block title %}编辑项目 - 云智实训管理平台{% endblock %}
+
+{% block page_title %}编辑实训项目{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title">编辑项目信息</h5>
+        <a href="{{ url_for('course.projects_list') }}" class="btn btn-sm btn-primary float-end">
+            <i class="fa fa-arrow-left"></i> 返回列表
+        </a>
+    </div>
+    <div class="card-body">
+        <!-- 显示表单错误 -->
+        {% if form.errors %}
+            <div class="alert alert-danger">
+                <strong>表单验证失败：</strong>
+                <ul class="mb-0">
+                    {% for field, errors in form.errors.items() %}
+                        {% for error in errors %}
+                            <li>{{ form[field].label }}: {{ error }}</li>
+                        {% endfor %}
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+        
+        <form method="POST" action="{{ url_for('course.edit_project', project_id=project.id) }}" class="form-validate">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            {{ form.hidden_tag() }}
+            
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        {{ form.project_code.label(class="form-label") }}
+                        {{ form.project_code(class="form-control", placeholder="例如：PROJ2026001") }}
+                        {% if form.project_code.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.project_code.errors[0] }}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="form-group">
+                        {{ form.name.label(class="form-label") }}
+                        {{ form.name(class="form-control", placeholder="例如：云智实训管理平台") }}
+                        {% if form.name.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.name.errors[0] }}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="col-md-12">
+                    <div class="form-group">
+                        {{ form.description.label(class="form-label") }}
+                        {{ form.description(class="form-control", rows=3, placeholder="请输入项目简介") }}
+                        {% if form.description.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.description.errors[0] }}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="form-group">
+                        {{ form.course_id.label(class="form-label") }}
+                        {{ form.course_id(class="form-select") }}
+                        {% if form.course_id.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.course_id.errors[0] }}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="form-group">
+                        {{ form.teacher_id.label(class="form-label") }}
+                        {{ form.teacher_id(class="form-select") }}
+                        {% if form.teacher_id.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.teacher_id.errors[0] }}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="form-group">
+                        {{ form.leader_id.label(class="form-label") }}
+                        {{ form.leader_id(class="form-select") }}
+                        {% if form.leader_id.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.leader_id.errors[0] }}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="form-group">
+                        {{ form.start_date.label(class="form-label") }}
+                        {{ form.start_date(class="form-control", type="date") }}
+                        {% if form.start_date.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.start_date.errors[0] }}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="form-group">
+                        {{ form.end_date.label(class="form-label") }}
+                        {{ form.end_date(class="form-control", type="date") }}
+                        {% if form.end_date.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.end_date.errors[0] }}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="form-group">
+                        {{ form.status.label(class="form-label") }}
+                        {{ form.status(class="form-select") }}
+                        {% if form.status.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.status.errors[0] }}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="form-group">
+                        {{ form.tech_stack.label(class="form-label") }}
+                        {{ form.tech_stack(class="form-control", placeholder="例如：Flask, Vue.js, MySQL, Redis") }}
+                        {% if form.tech_stack.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.tech_stack.errors[0] }}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="form-group">
+                        {{ form.deploy_url.label(class="form-label") }}
+                        {{ form.deploy_url(class="form-control", placeholder="例如：https://project.example.com") }}
+                        {% if form.deploy_url.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.deploy_url.errors[0] }}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="form-group">
+                        {{ form.max_team_size.label(class="form-label") }}
+                        {{ form.max_team_size(class="form-control", placeholder="默认5人") }}
+                        {% if form.max_team_size.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.max_team_size.errors[0] }}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="col-md-8">
+                    <div class="form-group">
+                        {{ form.template_id.label(class="form-label") }}
+                        <select name="template_id" id="template_id" class="form-select">
+                            <option value="0">-- 不使用模板 --</option>
+                            {% for template in templates %}
+                                <option value="{{ template.id }}" 
+                                        {% if project.template_id == template.id %}selected{% endif %}>
+                                    {{ template.name }} 
+                                    {% if template.difficulty_level %}
+                                        ({{ {'easy': '简单', 'medium': '中等', 'hard': '困难'}[template.difficulty_level] }})
+                                    {% endif %}
+                                </option>
+                            {% endfor %}
+                        </select>
+                        <small class="form-text text-muted">选择模板可以快速创建标准化项目</small>
+                        {% if form.template_id.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.template_id.errors[0] }}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="col-md-12">
+                    <div class="form-group">
+                        {{ form.evaluation_criteria.label(class="form-label") }}
+                        {{ form.evaluation_criteria(class="form-control", rows=3, placeholder="请输入项目评分规则") }}
+                        {% if form.evaluation_criteria.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.evaluation_criteria.errors[0] }}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="col-md-12">
+                    <div class="form-group">
+                        {{ form.requirements.label(class="form-label") }}
+                        {{ form.requirements(class="form-control", rows=3, placeholder="请输入项目要求") }}
+                        {% if form.requirements.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.requirements.errors[0] }}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-4">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fa fa-save"></i> 保存
+                </button>
+                <a href="{{ url_for('course.projects_list') }}" class="btn btn-secondary">
+                    <i class="fa fa-times"></i> 取消
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

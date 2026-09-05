@@ -1,0 +1,185 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}小组管理{% endblock %}
+
+{% block page_title %}小组管理{% endblock %}
+
+{% block page_subtitle %}管理实训小组{% endblock %}
+
+{% block content %}
+<!-- 搜索筛选栏 -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-3">
+            <div class="col-md-3">
+                <input type="text" name="keyword" class="form-control" placeholder="搜索小组名称" value="{{ request.args.get('keyword', '') }}">
+            </div>
+            <div class="col-md-2">
+                <select name="status" class="form-select">
+                    <option value="">全部状态</option>
+                    <option value="active" {% if request.args.get('status') == 'active' %}selected{% endif %}>活跃</option>
+                    <option value="completed" {% if request.args.get('status') == 'completed' %}selected{% endif %}>已完成</option>
+                    <option value="disbanded" {% if request.args.get('status') == 'disbanded' %}selected{% endif %}>已解散</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="project_id" class="form-select">
+                    <option value="">全部项目</option>
+                    {% for project in projects %}
+                    <option value="{{ project.id }}" {% if request.args.get('project_id') == project.id|string %}selected{% endif %}>{{ project.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="leader_id" class="form-select">
+                    <option value="">全部组长</option>
+                    {% for leader in leaders %}
+                    <option value="{{ leader.id }}" {% if request.args.get('leader_id') == leader.id|string %}selected{% endif %}>{{ leader.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary"><i class="fa fa-search"></i> 搜索</button>
+                <a href="{{ url_for('project.teams_list') }}" class="btn btn-secondary"><i class="fa fa-refresh"></i> 重置</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 小组列表卡片 -->
+<div class="card">
+    <div class="card-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h5 class="card-title"><i class="fa fa-users" style="color: var(--primary-color);"></i> 小组列表</h5>
+            <a href="{{ url_for('project.add_team') }}" class="btn btn-primary">
+                <i class="fa fa-plus"></i> 创建小组
+            </a>
+        </div>
+    </div>
+    <div class="card-body">
+        {% if pagination and pagination.items %}
+        <div class="table-responsive">
+            <table class="table table-modern">
+                <thead>
+                    <tr>
+                        <th>小组名称</th>
+                        <th>所属项目</th>
+                        <th>组长</th>
+                        <th>成员数</th>
+                        <th>创建时间</th>
+                        <th>状态</th>
+                        <th>得分</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for team in pagination.items %}
+                    <tr>
+                        <td><strong>{{ team.team_name }}</strong></td>
+                        <td>{{ team.project.name if team.project else '-' }}</td>
+                        <td>{{ team.leader.name if team.leader else '-' }}</td>
+                        <td>{{ team.members.count() }}人</td>
+                        <td>{{ team.created_at.strftime('%Y-%m-%d') }}</td>
+                        <td>
+                            {% if team.status == 'active' %}
+                                <span class="badge badge-active">活跃</span>
+                            {% elif team.status == 'completed' %}
+                                <span class="badge badge-completed">已完成</span>
+                            {% elif team.status == 'disbanded' %}
+                                <span class="badge badge-disbanded">已解散</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if team.score %}
+                                <span class="badge badge-score">{{ team.score }}</span>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="action-btns">
+                                <a href="{{ url_for('project.team_detail', team_id=team.id) }}" class="btn btn-sm btn-info">
+                                    <i class="fa fa-eye"></i> 详情
+                                </a>
+                                {% if current_user.role in ['admin', 'teacher'] %}
+                                <a href="{{ url_for('project.edit_team', team_id=team.id) }}" class="btn btn-sm btn-primary">
+                                    <i class="fa fa-edit"></i> 编辑
+                                </a>
+                                <button class="btn btn-sm btn-danger" onclick="confirmDelete({{ team.id }}, '{{ team.team_name }}')">
+                                    <i class="fa fa-trash"></i> 删除
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 分页 -->
+        {% if pagination.pages > 1 %}
+        <nav aria-label="Page navigation" class="mt-4">
+            <ul class="pagination pagination-modern justify-content-center">
+                {% if pagination.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('project.teams_list', page=pagination.prev_num, **request.args) }}">上一页</a>
+                    </li>
+                {% endif %}
+
+                {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                    {% if page_num %}
+                        {% if page_num == pagination.page %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ page_num }}</span>
+                            </li>
+                        {% else %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('project.teams_list', page=page_num, **request.args) }}">{{ page_num }}</a>
+                            </li>
+                        {% endif %}
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">...</span>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if pagination.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('project.teams_list', page=pagination.next_num, **request.args) }}">下一页</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+
+        {% else %}
+        <div class="empty-state">
+            <i class="fa fa-users"></i>
+            <h5>暂无小组数据</h5>
+            <p class="text-muted">还没有创建任何小组</p>
+            <a href="{{ url_for('project.add_team') }}" class="btn btn-primary">
+                <i class="fa fa-plus"></i> 创建第一个小组
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- 删除确认对话框 -->
+<form id="deleteForm" method="POST" style="display: none;">
+    <input type="hidden" name="_method" value="DELETE">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+</form>
+
+<script>
+function confirmDelete(teamId, teamName) {
+    if (confirm(确定要删除小组""吗？此操作将同时删除该小组的所有任务和记录。)) {
+        const form = document.getElementById('deleteForm');
+        form.action = /teams/\/delete;
+        form.submit();
+    }
+}
+</script>
+{% endblock %}

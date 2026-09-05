@@ -1,0 +1,235 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}学院专业管理{% endblock %}
+
+{% block page_title %}学院专业管理{% endblock %}
+
+{% block page_subtitle %}管理学院、专业、班级层级结构{% endblock %}
+
+{% block content %}
+<!-- 操作栏 -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h6 class="mb-0"><i class="fa fa-building" style="color: var(--primary-color);"></i> 学院专业管理</h6>
+                <small class="text-muted">管理学院的层级结构，支持动态添加学院、专业和班级</small>
+            </div>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addDeptModal">
+                <i class="fa fa-plus"></i> 添加学院
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- 学院列表 -->
+{% if departments %}
+<div class="row">
+    {% for dept in departments %}
+    <div class="col-md-6 mb-4">
+        <div class="card dept-card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fa {{ dept.icon }}" style="color: var(--primary-color);"></i>
+                        {{ dept.name }}
+                    </h5>
+                    <div class="action-btns">
+                        <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#editDeptModal{{ dept.id }}">
+                            <i class="fa fa-edit"></i> 编辑
+                        </button>
+                        <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#addMajorModal{{ dept.id }}">
+                            <i class="fa fa-plus"></i> 添加专业
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if dept.majors %}
+                <div class="major-list">
+                    {% for major in dept.majors %}
+                    <div class="major-item">
+                        <div class="major-header">
+                            <h6><i class="fa fa-graduation-cap" style="color: var(--secondary-color);"></i> {{ major.name }}</h6>
+                            <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addClassModal{{ major.id }}">
+                                <i class="fa fa-plus"></i> 添加班级
+                            </button>
+                        </div>
+                        {% if major.classes %}
+                        <div class="class-list">
+                            {% for class in major.classes %}
+                            <span class="class-badge">{{ class.name }}</span>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <p class="text-muted empty-hint">暂无班级，请点击"添加班级"按钮</p>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted empty-hint">暂无专业，请点击"添加专业"按钮</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- 编辑学院模态框 -->
+    <div class="modal fade" id="editDeptModal{{ dept.id }}" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="POST" action="{{ url_for('dept.edit_department', dept_id=dept.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="modal-header">
+                        <h5 class="modal-title">编辑学院</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">学院名称</label>
+                            <input type="text" name="name" class="form-control" value="{{ dept.name }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">图标</label>
+                            <select name="icon" class="form-select">
+                                <option value="fa-building" {% if dept.icon == 'fa-building' %}selected{% endif %}>🏢 建筑</option>
+                                <option value="fa-code" {% if dept.icon == 'fa-code' %}selected{% endif %}>💻 代码</option>
+                                <option value="fa-robot" {% if dept.icon == 'fa-robot' %}selected{% endif %}>🤖 机器人</option>
+                                <option value="fa-paint-brush" {% if dept.icon == 'fa-paint-brush' %}selected{% endif %}>🎨 艺术</option>
+                                <option value="fa-cogs" {% if dept.icon == 'fa-cogs' %}selected{% endif %}>⚙️ 装备</option>
+                                <option value="fa-briefcase" {% if dept.icon == 'fa-briefcase' %}selected{% endif %}>💼 商务</option>
+                                <option value="fa-medkit" {% if dept.icon == 'fa-medkit' %}selected{% endif %}>💊 医药</option>
+                                <option value="fa-music" {% if dept.icon == 'fa-music' %}selected{% endif %}>🎵 音乐</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">排序</label>
+                            <input type="number" name="sort_order" class="form-control" value="{{ dept.sort_order }}">
+                        </div>
+                        <div class="form-check">
+                            <input type="checkbox" name="is_active" class="form-check-input" id="deptActive{{ dept.id }}" {% if dept.is_active %}checked{% endif %}>
+                            <label class="form-check-label" for="deptActive{{ dept.id }}">启用</label>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                        <button type="submit" class="btn btn-primary">保存</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 添加专业模态框 -->
+    <div class="modal fade" id="addMajorModal{{ dept.id }}" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="POST" action="{{ url_for('dept.add_major', dept_id=dept.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="modal-header">
+                        <h5 class="modal-title">为 {{ dept.name }} 添加专业</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">专业名称</label>
+                            <input type="text" name="name" class="form-control" placeholder="请输入专业名称" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">排序</label>
+                            <input type="number" name="sort_order" class="form-control" value="0">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                        <button type="submit" class="btn btn-primary">添加</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 添加班级模态框 -->
+    {% for major in dept.majors %}
+    <div class="modal fade" id="addClassModal{{ major.id }}" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="POST" action="{{ url_for('dept.add_class', major_id=major.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="modal-header">
+                        <h5 class="modal-title">为 {{ major.name }} 添加班级</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">班级名称</label>
+                            <input type="text" name="name" class="form-control" placeholder="请输入班级名称" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">年级</label>
+                            <input type="text" name="grade" class="form-control" placeholder="例如：2024级" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                        <button type="submit" class="btn btn-primary">添加</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+    {% endfor %}
+</div>
+{% else %}
+<div class="card">
+    <div class="card-body text-center py-5">
+        <i class="fa fa-building fa-3x text-muted mb-3"></i>
+        <h5 class="text-muted">暂无学院数据</h5>
+        <p class="text-muted">请点击右上角"添加学院"按钮开始添加</p>
+    </div>
+</div>
+{% endif %}
+
+<!-- 添加学院模态框 -->
+<div class="modal fade" id="addDeptModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('dept.add_department') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-header">
+                    <h5 class="modal-title">添加学院</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">学院名称</label>
+                        <input type="text" name="name" class="form-control" placeholder="请输入学院名称" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">图标</label>
+                        <select name="icon" class="form-select">
+                            <option value="fa-building">🏢 建筑</option>
+                            <option value="fa-code">💻 代码</option>
+                            <option value="fa-robot">🤖 机器人</option>
+                            <option value="fa-paint-brush">🎨 艺术</option>
+                            <option value="fa-cogs">⚙️ 装备</option>
+                            <option value="fa-briefcase">💼 商务</option>
+                            <option value="fa-medkit">💊 医药</option>
+                            <option value="fa-music">🎵 音乐</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">排序</label>
+                        <input type="number" name="sort_order" class="form-control" value="0">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary">添加</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

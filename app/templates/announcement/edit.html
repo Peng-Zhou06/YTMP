@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+
+{% block title %}编辑公告 - 云智实训管理平台{% endblock %}
+
+{% block page_title %}
+编辑公告
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="fa fa-edit"></i> 编辑公告</h5>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('announcement.edit', announcement_id=announcement.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
+            <div class="mb-3">
+                <label for="title" class="form-label">公告标题 <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="title" name="title" required 
+                       value="{{ announcement.title }}" maxlength="200">
+            </div>
+            
+            <div class="mb-3">
+                <label for="content" class="form-label">公告内容 <span class="text-danger">*</span></label>
+                <textarea class="form-control" id="content" name="content" rows="10" required>{{ announcement.content }}</textarea>
+                <small class="text-muted">支持HTML格式</small>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label for="priority" class="form-label">优先级</label>
+                    <select class="form-select" id="priority" name="priority">
+                        <option value="low" {% if announcement.priority == 'low' %}selected{% endif %}>低</option>
+                        <option value="normal" {% if announcement.priority == 'normal' %}selected{% endif %}>普通</option>
+                        <option value="high" {% if announcement.priority == 'high' %}selected{% endif %}>重要</option>
+                        <option value="urgent" {% if announcement.priority == 'urgent' %}selected{% endif %}>紧急</option>
+                    </select>
+                </div>
+                
+                <div class="col-md-4 mb-3">
+                    <label for="expire_at" class="form-label">过期时间</label>
+                    <input type="datetime-local" class="form-control" id="expire_at" name="expire_at"
+                           value="{{ announcement.expire_at.strftime('%Y-%m-%dT%H:%M') if announcement.expire_at else '' }}">
+                    <small class="text-muted">留空表示永不过期</small>
+                </div>
+                
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">选项</label>
+                    <div class="form-check mt-2">
+                        <input class="form-check-input" type="checkbox" id="is_pinned" name="is_pinned"
+                               {% if announcement.is_pinned %}checked{% endif %}>
+                        <label class="form-check-label" for="is_pinned">
+                            <i class="fa fa-thumb-tack text-danger"></i> 置顶公告
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="d-flex justify-content-end">
+                <a href="{{ url_for('announcement.detail', announcement_id=announcement.id) }}" class="btn btn-outline-secondary me-2">
+                    <i class="fa fa-times"></i> 取消
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fa fa-save"></i> 保存修改
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

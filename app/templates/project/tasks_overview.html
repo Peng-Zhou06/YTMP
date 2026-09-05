@@ -1,0 +1,414 @@
+{% extends "base.html" %}
+
+{% block title %}任务总览{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- 页面头部 -->
+    <div class="page-header mb-4">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <nav aria-label="breadcrumb" class="mb-2">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="{{ url_for('project.projects_list') }}">项目</a></li>
+                        <li class="breadcrumb-item active">任务总览</li>
+                    </ol>
+                </nav>
+                <h2 class="mb-0">
+                    <i class="fas fa-chart-line text-white"></i> 
+                    任务总览
+                </h2>
+            </div>
+            <div class="col-md-6 text-end">
+                <a href="{{ url_for('project.tasks_list') }}" class="btn btn-outline-light">
+                    <i class="fas fa-tasks"></i> 看板视图
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- 统计卡片 -->
+    <div class="row mb-4">
+        <div class="col-md-2">
+            <div class="stat-card stat-card-info">
+                <div class="stat-icon"><i class="fas fa-list-ol"></i></div>
+                <div class="stat-content">
+                    <div class="stat-number">{{ total_tasks }}</div>
+                    <div class="stat-label">任务总数</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="stat-card stat-card-success">
+                <div class="stat-icon"><i class="fas fa-check-double"></i></div>
+                <div class="stat-content">
+                    <div class="stat-number">{{ "%.1f"|format(completion_rate) }}%</div>
+                    <div class="stat-label">完成率</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="stat-card stat-card-danger">
+                <div class="stat-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                <div class="stat-content">
+                    <div class="stat-number">{{ status_counts.delayed }}</div>
+                    <div class="stat-label">已延期</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="stat-card stat-card-primary">
+                <div class="stat-icon"><i class="fas fa-spinner"></i></div>
+                <div class="stat-content">
+                    <div class="stat-number">{{ status_counts.in_progress }}</div>
+                    <div class="stat-label">进行中</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="stat-card stat-card-warning">
+                <div class="stat-icon"><i class="fas fa-eye"></i></div>
+                <div class="stat-content">
+                    <div class="stat-number">{{ status_counts.review }}</div>
+                    <div class="stat-label">待测试</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="stat-card stat-card-danger-light">
+                <div class="stat-icon"><i class="fas fa-flag"></i></div>
+                <div class="stat-content">
+                    <div class="stat-number">{{ priority_counts.high }}</div>
+                    <div class="stat-label">高优先级</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 可视化图表 -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card chart-card">
+                <div class="card-header">
+                    <h5 class="card-title"><i class="fas fa-chart-pie text-primary"></i> 任务状态分布</h5>
+                </div>
+                <div class="card-body">
+                    <div id="statusChart" style="height: 300px;"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card chart-card">
+                <div class="card-header">
+                    <h5 class="card-title"><i class="fas fa-flag text-warning"></i> 任务优先级分布</h5>
+                </div>
+                <div class="card-body">
+                    <div id="priorityChart" style="height: 300px;"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card chart-card">
+                <div class="card-header">
+                    <h5 class="card-title"><i class="fas fa-tachometer-alt text-success"></i> 任务完成率</h5>
+                </div>
+                <div class="card-body">
+                    <div id="completionChart" style="height: 300px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 各小组任务统计 -->
+    <div class="card table-card">
+        <div class="card-header">
+            <h5 class="card-title"><i class="fas fa-users text-info"></i> 各小组任务统计</h5>
+        </div>
+        <div class="card-body">
+            {% if team_task_stats %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th><i class="fas fa-users text-muted"></i> 小组名称</th>
+                            <th><i class="fas fa-project-diagram text-muted"></i> 所属项目</th>
+                            <th><i class="fas fa-list text-muted"></i> 任务总数</th>
+                            <th><i class="fas fa-check text-muted"></i> 已完成</th>
+                            <th><i class="fas fa-percentage text-muted"></i> 完成率</th>
+                            <th style="width: 30%;"><i class="fas fa-tasks text-muted"></i> 进度条</th>
+                            <th><i class="fas fa-cog text-muted"></i> 操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for stat in team_task_stats %}
+                        <tr>
+                            <td><strong>{{ stat.team.team_name }}</strong></td>
+                            <td>{{ stat.team.project.name if stat.team.project else '-' }}</td>
+                            <td><span class="badge bg-secondary">{{ stat.total }}</span></td>
+                            <td><span class="badge bg-success">{{ stat.completed }}</span></td>
+                            <td>
+                                <span class="fw-bold {% if stat.rate >= 80 %}text-success{% elif stat.rate >= 50 %}text-info{% elif stat.rate >= 30 %}text-warning{% else %}text-danger{% endif %}">
+                                    {{ "%.1f"|format(stat.rate) }}%
+                                </span>
+                            </td>
+                            <td>
+                                <div class="progress" style="height: 24px; border-radius: 12px;">
+                                    <div class="progress-bar {% if stat.rate >= 80 %}bg-success{% elif stat.rate >= 50 %}bg-info{% elif stat.rate >= 30 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                         role="progressbar" 
+                                         style="width: {{ stat.rate }}%; border-radius: 12px;">
+                                        {{ "%.1f"|format(stat.rate) }}%
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <a href="{{ url_for('project.tasks_list', team_id=stat.team.id) }}" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-eye"></i> 查看
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i> 暂无任务数据
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+/* 页面头部 */
+.page-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 20px;
+    border-radius: 12px;
+    color: white;
+}
+
+.page-header h2 {
+    color: white;
+}
+
+.page-header .breadcrumb {
+    background: transparent;
+    padding: 0;
+}
+
+.page-header .breadcrumb-item a {
+    color: rgba(255,255,255,0.8);
+}
+
+.page-header .breadcrumb-item.active {
+    color: white;
+}
+
+/* 统计卡片 */
+.stat-card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    transition: all 0.3s;
+    border-left: 4px solid;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.stat-card-info { border-left-color: #0dcaf0; }
+.stat-card-success { border-left-color: #198754; }
+.stat-card-danger { border-left-color: #dc3545; }
+.stat-card-primary { border-left-color: #0d6efd; }
+.stat-card-warning { border-left-color: #ffc107; }
+.stat-card-danger-light { border-left-color: #fd7e14; }
+
+.stat-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: white;
+}
+
+.stat-card-info .stat-icon { background: linear-gradient(135deg, #0dcaf0, #0aa2c0); }
+.stat-card-success .stat-icon { background: linear-gradient(135deg, #198754, #157347); }
+.stat-card-danger .stat-icon { background: linear-gradient(135deg, #dc3545, #bb2d3b); }
+.stat-card-primary .stat-icon { background: linear-gradient(135deg, #0d6efd, #0b5ed7); }
+.stat-card-warning .stat-icon { background: linear-gradient(135deg, #ffc107, #e0a800); }
+.stat-card-danger-light .stat-icon { background: linear-gradient(135deg, #fd7e14, #e8590c); }
+
+.stat-content {
+    flex: 1;
+}
+
+.stat-number {
+    font-size: 28px;
+    font-weight: bold;
+    color: #333;
+}
+
+.stat-label {
+    font-size: 14px;
+    color: #666;
+}
+
+/* 图表卡片 */
+.chart-card {
+    border: none;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.chart-card .card-header {
+    background: white;
+    border-bottom: 1px solid #eee;
+    padding: 15px 20px;
+}
+
+.chart-card .card-title {
+    margin: 0;
+    font-size: 16px;
+    color: #333;
+}
+
+/* 表格卡片 */
+.table-card {
+    border: none;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.table-card .card-header {
+    background: white;
+    border-bottom: 1px solid #eee;
+    padding: 15px 20px;
+}
+
+.table-card .card-title {
+    margin: 0;
+    font-size: 16px;
+    color: #333;
+}
+
+.table {
+    margin-bottom: 0;
+}
+
+.table thead th {
+    font-weight: 600;
+    color: #495057;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.table tbody tr {
+    transition: background-color 0.2s;
+}
+
+.table tbody tr:hover {
+    background-color: #f8f9fa;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<script>
+$(document).ready(function() {
+    // 任务状态分布饼图
+    var statusChart = echarts.init(document.getElementById('statusChart'));
+    statusChart.setOption({
+        tooltip: { trigger: 'item' },
+        legend: { bottom: '5%' },
+        series: [{
+            name: '任务状态',
+            type: 'pie',
+            radius: ['40%', '70%'],
+            itemStyle: { borderRadius: 10, borderColor: '#fff', borderWidth: 2 },
+            label: { show: false, position: 'center' },
+            emphasis: { label: { show: true, fontSize: 16, fontWeight: 'bold' }},
+            data: [
+                { value: {{ status_counts.todo }}, name: '待开始', itemStyle: { color: '#6c757d' }},
+                { value: {{ status_counts.in_progress }}, name: '进行中', itemStyle: { color: '#0d6efd' }},
+                { value: {{ status_counts.review }}, name: '待测试', itemStyle: { color: '#ffc107' }},
+                { value: {{ status_counts.done }}, name: '已完成', itemStyle: { color: '#198754' }},
+                { value: {{ status_counts.delayed }}, name: '已延期', itemStyle: { color: '#dc3545' }},
+                { value: {{ status_counts.closed }}, name: '已关闭', itemStyle: { color: '#343a40' }}
+            ]
+        }]
+    });
+    
+    // 任务优先级分布饼图
+    var priorityChart = echarts.init(document.getElementById('priorityChart'));
+    priorityChart.setOption({
+        tooltip: { trigger: 'item' },
+        legend: { bottom: '5%' },
+        series: [{
+            name: '优先级',
+            type: 'pie',
+            radius: ['40%', '70%'],
+            itemStyle: { borderRadius: 10, borderColor: '#fff', borderWidth: 2 },
+            label: { show: false, position: 'center' },
+            emphasis: { label: { show: true, fontSize: 16, fontWeight: 'bold' }},
+            data: [
+                { value: {{ priority_counts.high }}, name: '高', itemStyle: { color: '#dc3545' }},
+                { value: {{ priority_counts.medium }}, name: '中', itemStyle: { color: '#ffc107' }},
+                { value: {{ priority_counts.low }}, name: '低', itemStyle: { color: '#198754' }}
+            ]
+        }]
+    });
+    
+    // 完成率仪表盘
+    var completionChart = echarts.init(document.getElementById('completionChart'));
+    completionChart.setOption({
+        series: [{
+            type: 'gauge',
+            progress: { show: true, width: 18 },
+            axisLine: { lineStyle: { width: 18 }},
+            axisTick: { show: false },
+            splitLine: { length: 15, lineStyle: { width: 2, color: '#999' }},
+            axisLabel: { distance: 25, color: '#999', fontSize: 12 },
+            anchor: { show: true, showAbove: true, size: 25, itemStyle: { borderWidth: 10 }},
+            title: { show: false },
+            detail: {
+                valueAnimation: true,
+                fontSize: 30,
+                offsetCenter: [0, '70%']
+            },
+            data: [{
+                value: {{ completion_rate }},
+                name: '完成率',
+                itemStyle: {
+                    color: function() {
+                        if ({{ completion_rate }} >= 80) return '#198754';
+                        if ({{ completion_rate }} >= 50) return '#0d6efd';
+                        if ({{ completion_rate }} >= 30) return '#ffc107';
+                        return '#dc3545';
+                    }
+                }
+            }]
+        }]
+    });
+    
+    window.addEventListener('resize', function() {
+        statusChart.resize();
+        priorityChart.resize();
+        completionChart.resize();
+    });
+});
+</script>
+{% endblock %}

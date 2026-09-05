@@ -1,0 +1,387 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ course.course_name }} - 课程详情{% endblock %}
+
+{% block page_title %}{{ course.course_name }}{% endblock %}
+
+{% block content %}
+<div class="card mb-3">
+    <div class="card-header">
+        <h5 class="card-title">课程信息</h5>
+        <a href="{{ url_for('course.courses_list') }}" class="btn btn-sm btn-primary float-end">
+            <i class="fa fa-arrow-left"></i> 返回列表
+        </a>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3">
+                <strong>课程编号：</strong>{{ course.course_code }}
+            </div>
+            <div class="col-md-3">
+                <strong>授课教师：</strong>{{ course.teacher.name if course.teacher else '未分配' }}
+            </div>
+            <div class="col-md-3">
+                <strong>学分：</strong>{{ course.credits }}
+            </div>
+            <div class="col-md-3">
+                <strong>课时：</strong>{{ course.hours }}
+            </div>
+        </div>
+        <div class="row mt-2">
+            <div class="col-md-3">
+                <strong>学年：</strong>{{ course.year }}
+            </div>
+            <div class="col-md-3">
+                <strong>学期：</strong>{{ course.semester }}
+            </div>
+            <div class="col-md-3">
+                <strong>教室：</strong>{{ course.classroom or '未分配' }}
+            </div>
+            <div class="col-md-3">
+                <strong>学生总数：</strong>{{ class_students.values() | map('length') | sum }}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 课程资料 -->
+<div class="card mb-3">
+    <div class="card-header">
+        <h5 class="card-title">课程资料</h5>
+        {% if current_user.role in ['admin', 'teacher'] %}
+        <a href="{{ url_for('course.upload_document', course_id=course.id) }}" class="btn btn-sm btn-primary float-end">
+            <i class="fa fa-upload"></i> 上传资料
+        </a>
+        {% endif %}
+    </div>
+    <div class="card-body">
+        {% if documents %}
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>资料名称</th>
+                    <th>文件类型</th>
+                    <th>文件大小</th>
+                    <th>上传者</th>
+                    <th>上传时间</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for doc in documents %}
+                <tr>
+                    <td>{{ doc.title }}</td>
+                    <td>{{ doc.file_type|upper }}</td>
+                    <td>{{ (doc.file_size / 1024)|round(1) }} KB</td>
+                    <td>{{ doc.uploader.name }}</td>
+                    <td>{{ doc.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                    <td>
+                        <a href="{{ url_for('course.download_document', doc_id=doc.id) }}" class="btn btn-sm btn-success me-1">
+                            <i class="fa fa-download"></i> 下载
+                        </a>
+                        {% if current_user.role in ['admin', 'teacher'] %}
+                        <a href="{{ url_for('course.delete_document', doc_id=doc.id) }}" class="btn btn-sm btn-danger btn-delete">
+                            <i class="fa fa-trash"></i> 删除
+                        </a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="alert alert-info">
+            <i class="fa fa-info-circle"></i> 暂无课程资料
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- 班级列表 -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title">班级列表</h5>
+        {% if current_user.role in ['admin', 'teacher'] %}
+        <button type="button" class="btn btn-sm btn-primary float-end" data-bs-toggle="modal" data-bs-target="#addClassModal">
+            <i class="fa fa-plus"></i> 添加班级
+        </button>
+        {% endif %}
+    </div>
+    <div class="card-body">
+        {% if class_students %}
+        <div class="row">
+            {% for class_name, students in class_students.items() %}
+            <div class="col-md-4 mb-3">
+                <div class="card">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0">
+                            <a href="{{ url_for('course.class_students', course_id=course.id, class_name=class_name) }}" class="text-primary">
+                                <i class="fa fa-users"></i> {{ class_name }}班 ({{ students|length }}人)
+                            </a>
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-unstyled mb-0">
+                            {% for item in students[:5] %}
+                            <li class="text-muted small">{{ item.student.name }}（{{ item.student.student_id }}）</li>
+                            {% endfor %}
+                            {% if students|length > 5 %}
+                            <li class="text-muted small">... 还有 {{ students|length - 5 }} 人</li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="alert alert-info">
+            <i class="fa fa-info-circle"></i> 该课程暂无学生，请点击右上角"添加班级"按钮。
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- 添加班级模态框 -->
+{% if current_user.role in ['admin', 'teacher'] %}
+<div class="modal fade" id="addClassModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">添加班级到课程</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('course.add_class_to_course', course_id=course.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">选择学院</label>
+                            <select class="form-control" id="deptSelect">
+                                <option value="">全部学院</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">选择专业</label>
+                            <select class="form-control" id="majorSelect">
+                                <option value="">全部专业</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">选择班级</label>
+                        <select name="class_key" class="form-control" id="classSelect" required>
+                            <option value="">请选择班级</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">班级学生预览</label>
+                        <div id="studentPreview" class="border rounded p-3" style="max-height: 300px; overflow-y: auto;">
+                            <p class="text-muted mb-0">请先选择班级</p>
+                        </div>
+                    </div>
+                    <div class="alert alert-info mb-0">
+                        <i class="fa fa-info-circle"></i> 添加后，该班级的所有学生将被加入此课程，可在"成绩管理"中录入成绩。
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary">添加班级</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+const allClasses = {{ all_classes_json | safe }};
+const deptMajors = {{ dept_majors_json | safe }};
+
+// 初始化学院下拉框
+const deptSelect = document.getElementById('deptSelect');
+const majorSelect = document.getElementById('majorSelect');
+const classSelect = document.getElementById('classSelect');
+const studentPreview = document.getElementById('studentPreview');
+
+// 填充学院选项
+Object.keys(deptMajors).forEach(function(dept) {
+    const option = document.createElement('option');
+    option.value = dept;
+    option.textContent = dept;
+    deptSelect.appendChild(option);
+});
+
+// 学院变化时更新专业选项
+deptSelect.addEventListener('change', function() {
+    const dept = this.value;
+    majorSelect.innerHTML = '<option value="">全部专业</option>';
+    
+    if (dept && deptMajors[dept]) {
+        deptMajors[dept].forEach(function(major) {
+            const option = document.createElement('option');
+            option.value = major;
+            option.textContent = major;
+            majorSelect.appendChild(option);
+        });
+    }
+    
+    updateClassList();
+});
+
+// 专业变化时更新班级列表
+majorSelect.addEventListener('change', function() {
+    updateClassList();
+});
+
+// 更新班级列表
+function updateClassList() {
+    const dept = deptSelect.value;
+    const major = majorSelect.value;
+    
+    classSelect.innerHTML = '<option value="">请选择班级</option>';
+    
+    Object.keys(allClasses).forEach(function(classKey) {
+        let show = true;
+        
+        if (dept && !classKey.startsWith(dept)) {
+            show = false;
+        }
+        if (major && !classKey.includes(' - ' + major + ' - ')) {
+            show = false;
+        }
+        
+        if (show) {
+            const option = document.createElement('option');
+            option.value = classKey;
+            option.textContent = classKey + '（' + allClasses[classKey].length + '人）';
+            classSelect.appendChild(option);
+        }
+    });
+    
+    studentPreview.innerHTML = '<p class="text-muted mb-0">请先选择班级</p>';
+}
+
+// 班级变化时更新学生预览
+classSelect.addEventListener('change', function() {
+    const classKey = this.value;
+    
+    if (!classKey) {
+        studentPreview.innerHTML = '<p class="text-muted mb-0">请先选择班级</p>';
+        return;
+    }
+    
+    const students = allClasses[classKey] || [];
+    
+    if (students.length === 0) {
+        studentPreview.innerHTML = '<p class="text-muted mb-0">该班级暂无学生</p>';
+        return;
+    }
+    
+    let html = '<ul class="list-unstyled mb-0">';
+    students.forEach(function(s) {
+        html += '<li class="mb-1">' + s.name + '（' + s.student_id + '）</li>';
+    });
+    html += '</ul>';
+    studentPreview.innerHTML = html;
+});
+</script>
+{% endif %}
+
+<!-- 课程讨论 -->
+<div class="card mt-3">
+    <div class="card-header">
+        <h5 class="card-title">课程讨论</h5>
+    </div>
+    <div class="card-body">
+        <!-- 发表讨论 -->
+        {% if current_user.is_authenticated %}
+        <form method="POST" action="{{ url_for('course.add_discussion', course_id=course.id) }}" class="mb-4">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="mb-3">
+                <textarea name="content" class="form-control" rows="3" placeholder="发表你的想法..." required></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">
+                <i class="fa fa-paper-plane"></i> 发表
+            </button>
+        </form>
+        {% endif %}
+        
+        <!-- 讨论列表 -->
+        {% if discussions %}
+        <div class="discussions-list">
+            {% for discussion in discussions %}
+            <div class="discussion-item mb-3 p-3 border rounded">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div class="d-flex align-items-center">
+                        {% if discussion.user.avatar %}
+                        <img src="{{ url_for('static', filename=discussion.user.avatar) }}" class="rounded-circle me-2" width="40" height="40" alt="头像">
+                        {% else %}
+                        <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center me-2" style="width: 40px; height: 40px;">
+                            {{ discussion.user.name[0] }}
+                        </div>
+                        {% endif %}
+                        <div>
+                            <strong>{{ discussion.user.name }}</strong>
+                            <small class="text-muted ms-2">{{ discussion.user.role }}</small>
+                        </div>
+                    </div>
+                    <small class="text-muted">{{ discussion.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                </div>
+                <p class="mb-2">{{ discussion.content }}</p>
+                
+                <!-- 回复列表 -->
+                {% if discussion.replies %}
+                <div class="replies ms-4 mt-3">
+                    {% for reply in discussion.replies %}
+                    <div class="reply-item mb-2 p-2 bg-light rounded">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <div class="d-flex align-items-center">
+                                {% if reply.user.avatar %}
+                                <img src="{{ url_for('static', filename=reply.user.avatar) }}" class="rounded-circle me-2" width="30" height="30" alt="头像">
+                                {% else %}
+                                <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center me-2" style="width: 30px; height: 30px; font-size: 0.8rem;">
+                                    {{ reply.user.name[0] }}
+                                </div>
+                                {% endif %}
+                                <div>
+                                    <strong>{{ reply.user.name }}</strong>
+                                    <small class="text-muted ms-2">{{ reply.user.role }}</small>
+                                </div>
+                            </div>
+                            <small class="text-muted">{{ reply.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                        </div>
+                        <p class="mb-0">{{ reply.content }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                
+                <!-- 回复表单 -->
+                {% if current_user.is_authenticated %}
+                <form method="POST" action="{{ url_for('course.add_discussion', course_id=course.id) }}" class="mt-2">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="parent_id" value="{{ discussion.id }}">
+                    <div class="input-group">
+                        <input type="text" name="content" class="form-control" placeholder="回复..." required>
+                        <button type="submit" class="btn btn-sm btn-outline-primary">回复</button>
+                    </div>
+                </form>
+                {% endif %}
+                
+                <!-- 删除按钮 -->
+                {% if current_user.role == 'admin' or discussion.user_id == current_user.id %}
+                <a href="{{ url_for('course.delete_discussion', discussion_id=discussion.id) }}" class="btn btn-sm btn-danger mt-2">
+                    <i class="fa fa-trash"></i> 删除
+                </a>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="alert alert-info">
+            <i class="fa fa-info-circle"></i> 暂无讨论，快来发表第一条评论吧！
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

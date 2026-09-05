@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block title %}提交Bug{% endblock %}
+
+{% block page_title %}提交Bug{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('project.bugs_list') }}">Bug管理</a></li>
+                    <li class="breadcrumb-item active">提交Bug</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title">提交Bug</h5>
+        </div>
+        <div class="card-body">
+            <form method="POST">
+                {{ form.csrf_token }}
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            {{ form.bug_code.label(class="form-label") }}
+                            {{ form.bug_code(class="form-control", placeholder="Bug编号") }}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            {{ form.title.label(class="form-label") }}
+                            {{ form.title(class="form-control", placeholder="Bug标题") }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            {{ form.severity.label(class="form-label") }}
+                            <select name="severity" id="severity" class="form-select">
+                                <option value="critical">致命</option>
+                                <option value="high">严重</option>
+                                <option value="medium" selected>一般</option>
+                                <option value="low">轻微</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            {{ form.priority.label(class="form-label") }}
+                            <select name="priority" id="priority" class="form-select">
+                                <option value="urgent">紧急</option>
+                                <option value="high">高</option>
+                                <option value="medium" selected>中</option>
+                                <option value="low">低</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            {{ form.environment.label(class="form-label") }}
+                            {{ form.environment(class="form-control", placeholder="测试环境") }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label">所属小组</label>
+                            <select name="team_id" id="team_id" class="form-select">
+                                <option value="">请选择小组</option>
+                                {% for team in teams %}
+                                <option value="{{ team.id }}">{{ team.team_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label">提出人</label>
+                            <select name="reported_by" id="reported_by" class="form-select">
+                                <option value="">请选择提出人</option>
+                                {% for student in students %}
+                                <option value="{{ student.id }}">{{ student.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    {{ form.description.label(class="form-label") }}
+                    {{ form.description(class="form-control", rows=3, placeholder="Bug详细描述...") }}
+                </div>
+
+                <div class="mb-3">
+                    {{ form.reproduction_steps.label(class="form-label") }}
+                    {{ form.reproduction_steps(class="form-control", rows=4, placeholder="复现步骤...") }}
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            {{ form.expected_result.label(class="form-label") }}
+                            {{ form.expected_result(class="form-control", rows=3, placeholder="期望结果...") }}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            {{ form.actual_result.label(class="form-label") }}
+                            {{ form.actual_result(class="form-control", rows=3, placeholder="实际结果...") }}
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary">
+                    <i class="fa fa-save"></i> 提交Bug
+                </button>
+                <a href="{{ url_for('project.bugs_list') }}" class="btn btn-secondary ml-2">
+                    <i class="fa fa-arrow-left"></i> 返回
+                </a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

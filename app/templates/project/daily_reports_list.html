@@ -1,0 +1,343 @@
+{% extends "base.html" %}
+
+{% block title %}日报管理{% endblock %}
+
+{% block page_title %}日报管理{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2><i class="fa fa-file-text"></i> 日报管理</h2>
+                <div>
+                    {% if current_user.role == 'student' %}
+                    <a href="{{ url_for('project.add_daily_report') }}" class="btn btn-primary">
+                        <i class="fa fa-plus"></i> 提交日报
+                    </a>
+                    {% endif %}
+                    {% if current_user.role in ['admin', 'teacher'] %}
+                    <a href="{{ url_for('project.unsubmitted_reports') }}" class="btn btn-warning">
+                        <i class="fa fa-bell"></i> 未提交提醒
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 统计卡片（教师可见） -->
+    {% if current_user.role in ['admin', 'teacher'] and daily_report_rate is not none %}
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="stat-card bg-info">
+                <div class="stat-number">{{ "%.1f"|format(daily_report_rate) }}%</div>
+                <div class="stat-label">今日日报提交率</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stat-card bg-success">
+                <div class="stat-number">{{ submitted_count }}</div>
+                <div class="stat-label">已提交人数</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stat-card bg-warning">
+                <div class="stat-number">{{ unsubmitted_count }}</div>
+                <div class="stat-label">未提交人数</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 可视化图表 -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">今日日报提交率</h5>
+                </div>
+                <div class="card-body">
+                    <div id="dailyReportChart" style="height: 300px;"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">近7天提交趋势</h5>
+                </div>
+                <div class="card-body">
+                    <div id="weeklyTrendChart" style="height: 300px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- 筛选器 -->
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="GET" class="row g-3">
+                        {% if current_user.role in ['admin', 'teacher'] %}
+                        <div class="col-md-3">
+                            <label for="team_id" class="form-label">小组筛选</label>
+                            <select name="team_id" id="team_id" class="form-select">
+                                <option value="">全部小组</option>
+                                {% for team in teams %}
+                                <option value="{{ team.id }}" {% if request.args.get('team_id')|int == team.id %}selected{% endif %}>
+                                    {{ team.team_name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="student_id" class="form-label">学生筛选</label>
+                            <select name="student_id" id="student_id" class="form-select">
+                                <option value="">全部学生</option>
+                                {% for student in students %}
+                                <option value="{{ student.id }}" {% if request.args.get('student_id')|int == student.id %}selected{% endif %}>
+                                    {{ student.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        {% endif %}
+                        <div class="col-md-3">
+                            <label for="report_date" class="form-label">日期筛选</label>
+                            <input type="date" name="report_date" id="report_date" class="form-control" value="{{ request.args.get('report_date') }}">
+                        </div>
+                        <div class="col-md-3">
+                            <button type="submit" class="btn btn-primary mt-4">
+                                <i class="fa fa-filter"></i> 应用筛选
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 日报列表 -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title">日报列表</h5>
+        </div>
+        <div class="card-body">
+            {% if pagination.items %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>日期</th>
+                            <th>学生</th>
+                            <th>小组</th>
+                            <th>今日工作</th>
+                            <th>状态</th>
+                            <th>提交时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for report in pagination.items %}
+                        <tr>
+                            <td>{{ report.report_date.strftime('%Y-%m-%d') }}</td>
+                            <td>{{ report.student.name if report.student else '-' }}</td>
+                            <td>{{ report.team.team_name if report.team else '-' }}</td>
+                            <td>{{ report.today_work[:50] }}{% if report.today_work|length > 50 %}...{% endif %}</td>
+                            <td>
+                                {% if report.is_submitted %}
+                                <span class="badge bg-success">已提交</span>
+                                {% else %}
+                                <span class="badge bg-warning">草稿</span>
+                                {% endif %}
+                                {% if report.teacher_review %}
+                                <span class="badge bg-info ml-1">已点评</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ report.created_at.strftime('%m-%d %H:%M') }}</td>
+                            <td>
+                                <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#reviewModal{{ report.id }}">
+                                    <i class="fa fa-eye"></i> 查看
+                                </button>
+                                {% if current_user.role == 'student' %}
+                                {% if report.report_date.date() == today %}
+                                <a href="{{ url_for('project.edit_daily_report', report_id=report.id) }}" class="btn btn-sm btn-primary">
+                                    <i class="fa fa-edit"></i> 编辑
+                                </a>
+                                {% endif %}
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- 分页 -->
+            {% if pagination.pages > 1 %}
+            <div class="pagination">
+                {{ pagination.links }}
+            </div>
+            {% endif %}
+            {% else %}
+            <div class="alert alert-info">
+                <i class="fa fa-info-circle"></i> 暂无日报记录
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- 查看/点评模态框 -->
+    {% for report in pagination.items %}
+    <div class="modal fade" id="reviewModal{{ report.id }}" tabindex="-1" aria-labelledby="reviewModalLabel{{ report.id }}" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="reviewModalLabel{{ report.id }}">日报详情 - {{ report.report_date.strftime('%Y-%m-%d') }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">学生：</label>
+                                <span>{{ report.student.name if report.student else '-' }}</span>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">小组：</label>
+                                <span>{{ report.team.team_name if report.team else '-' }}</span>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">工作时长：</label>
+                                <span>{{ report.working_hours }} 小时</span>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">心情：</label>
+                                <span>{{ {'happy': '😊 开心', 'normal': '😐 一般', 'stressed': '😫 紧张'}[report.mood] }}</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">提交状态：</label>
+                                <span>{% if report.is_submitted %}<span class="badge bg-success">已提交</span>{% else %}<span class="badge bg-warning">草稿</span>{% endif %}</span>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">提交时间：</label>
+                                <span>{{ report.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                            </div>
+                            {% if report.reviewed_at %}
+                            <div class="mb-3">
+                                <label class="form-label">点评时间：</label>
+                                <span>{{ report.reviewed_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">今日完成内容：</label>
+                        <p>{{ report.today_work or '-' }}</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">明日计划：</label>
+                        <p>{{ report.tomorrow_plan or '-' }}</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">遇到的问题：</label>
+                        <p>{{ report.issues or '-' }}</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">解决方案：</label>
+                        <p>{{ report.solutions or '-' }}</p>
+                    </div>
+                    
+                    {% if report.teacher_review %}
+                    <div class="mb-3 p-3 bg-info-light rounded">
+                        <label class="form-label">教师点评：</label>
+                        <p>{{ report.teacher_review }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    {% if current_user.role in ['admin', 'teacher'] %}
+                    <form action="{{ url_for('project.review_daily_report', report_id=report.id) }}" method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <div class="mb-3">
+                            <label class="form-label">添加点评：</label>
+                            <textarea name="review_text" class="form-control" rows="3" placeholder="输入点评内容...">{{ report.teacher_review or '' }}</textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">保存点评</button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if current_user.role in ['admin', 'teacher'] and daily_report_rate is not none %}
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<script>
+$(document).ready(function() {
+    // 今日提交率饼图
+    var dailyReportChart = echarts.init(document.getElementById('dailyReportChart'));
+    dailyReportChart.setOption({
+        tooltip: { trigger: 'item' },
+        legend: { bottom: '5%' },
+        series: [{
+            name: '日报提交情况',
+            type: 'pie',
+            radius: ['40%', '70%'],
+            avoidLabelOverlap: false,
+            itemStyle: { borderRadius: 10, borderColor: '#fff', borderWidth: 2 },
+            label: { show: false, position: 'center' },
+            emphasis: { label: { show: true, fontSize: 20, fontWeight: 'bold' }},
+            labelLine: { show: false },
+            data: [
+                { value: {{ submitted_count }}, name: '已提交', itemStyle: { color: '#28a745' }},
+                { value: {{ unsubmitted_count }}, name: '未提交', itemStyle: { color: '#ffc107' }}
+            ]
+        }]
+    });
+    
+    // 近7天提交趋势折线图
+    var weeklyTrendChart = echarts.init(document.getElementById('weeklyTrendChart'));
+    weeklyTrendChart.setOption({
+        tooltip: { trigger: 'axis' },
+        grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+        xAxis: {
+            type: 'category',
+            boundaryGap: false,
+            data: {{ weekly_dates | tojson }}
+        },
+        yAxis: { type: 'value', name: '提交人数' },
+        series: [{
+            name: '提交人数',
+            type: 'line',
+            smooth: true,
+            data: {{ weekly_counts | tojson }},
+            itemStyle: { color: '#17a2b8' },
+            areaStyle: {
+                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                    { offset: 0, color: 'rgba(23, 162, 184, 0.3)' },
+                    { offset: 1, color: 'rgba(23, 162, 184, 0.05)' }
+                ])
+            }
+        }]
+    });
+    
+    window.addEventListener('resize', function() {
+        dailyReportChart.resize();
+        weeklyTrendChart.resize();
+    });
+});
+</script>
+{% endif %}
+{% endblock %}

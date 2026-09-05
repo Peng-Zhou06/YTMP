@@ -1,0 +1,258 @@
+{% extends 'base.html' %}
+
+{% block title %}我的通知 - 云智实训管理平台{% endblock %}
+
+{% block page_title %}
+<div class="d-flex align-items-center">
+    <a href="javascript:history.back()" class="btn btn-outline-secondary me-3">
+        <i class="fa fa-arrow-left"></i> 返回
+    </a>
+    <span>我的通知</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- 统计卡片 -->
+    <div class="col-md-3 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3 class="text-primary">{{ stats.total }}</h3>
+                <p class="text-muted mb-0">全部通知</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3 class="text-danger">{{ stats.unread }}</h3>
+                <p class="text-muted mb-0">未读通知</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3 class="text-success">{{ stats.type_stats.get('success', 0) }}</h3>
+                <p class="text-muted mb-0">成功通知</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3 class="text-warning">{{ stats.type_stats.get('warning', 0) }}</h3>
+                <p class="text-muted mb-0">警告通知</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <div>
+            <strong>通知列表</strong>
+        </div>
+        <div>
+            <button class="btn btn-sm btn-outline-primary me-2" onclick="markAllAsRead()">
+                <i class="fa fa-check"></i> 全部标记为已读
+            </button>
+            <button class="btn btn-sm btn-outline-danger" onclick="clearAll()">
+                <i class="fa fa-trash"></i> 清空通知
+            </button>
+        </div>
+    </div>
+    <div class="card-body">
+        <!-- 筛选标签 -->
+        <ul class="nav nav-tabs mb-3">
+            <li class="nav-item">
+                <a class="nav-link {% if filter_type == 'all' %}active{% endif %}" 
+                   href="{{ url_for('notification.index', type='all') }}">全部</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if filter_type == 'info' %}active{% endif %}" 
+                   href="{{ url_for('notification.index', type='info') }}">信息</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if filter_type == 'warning' %}active{% endif %}" 
+                   href="{{ url_for('notification.index', type='warning') }}">警告</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if filter_type == 'success' %}active{% endif %}" 
+                   href="{{ url_for('notification.index', type='success') }}">成功</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if filter_type == 'task' %}active{% endif %}" 
+                   href="{{ url_for('notification.index', type='task') }}">任务</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if filter_type == 'announcement' %}active{% endif %}" 
+                   href="{{ url_for('notification.index', type='announcement') }}">公告</a>
+            </li>
+        </ul>
+
+        <!-- 通知列表 -->
+        {% if pagination.items %}
+        <div class="list-group">
+            {% for notif in pagination.items %}
+            <div class="list-group-item list-group-item-action {% if not notif.is_read %}list-group-item-light{% endif %}" 
+                 id="notif-{{ notif.id }}">
+                <div class="d-flex w-100 justify-content-between align-items-start">
+                    <div class="flex-grow-1">
+                        <div class="d-flex align-items-center mb-1">
+                            {% if notif.type == 'warning' %}
+                                <i class="fa fa-warning text-warning me-2"></i>
+                            {% elif notif.type == 'success' %}
+                                <i class="fa fa-check-circle text-success me-2"></i>
+                            {% elif notif.type == 'error' %}
+                                <i class="fa fa-times-circle text-danger me-2"></i>
+                            {% elif notif.type == 'task' %}
+                                <i class="fa fa-tasks text-primary me-2"></i>
+                            {% elif notif.type == 'announcement' %}
+                                <i class="fa fa-bullhorn text-danger me-2"></i>
+                            {% else %}
+                                <i class="fa fa-info-circle text-info me-2"></i>
+                            {% endif %}
+                            <h5 class="mb-0 {% if not notif.is_read %}fw-bold{% endif %}">{{ notif.title }}</h5>
+                            {% if not notif.is_read %}
+                                <span class="badge bg-danger ms-2">未读</span>
+                            {% endif %}
+                        </div>
+                        <p class="mb-1">{{ notif.content }}</p>
+                        <small class="text-muted">{{ notif.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                    </div>
+                    <div class="ms-3">
+                        {% if notif.link %}
+                            <a href="{{ notif.link }}" class="btn btn-sm btn-outline-primary me-1">
+                                <i class="fa fa-external-link"></i> 查看
+                            </a>
+                        {% endif %}
+                        {% if not notif.is_read %}
+                            <button class="btn btn-sm btn-outline-success me-1" onclick="markAsRead({{ notif.id }})">
+                                <i class="fa fa-check"></i> 已读
+                            </button>
+                        {% endif %}
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteNotif({{ notif.id }})">
+                            <i class="fa fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- 分页 -->
+        {% if pagination.pages > 1 %}
+        <nav class="mt-3">
+            <ul class="pagination justify-content-center">
+                {% if pagination.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('notification.index', page=pagination.prev_num, type=filter_type) }}">上一页</a>
+                    </li>
+                {% endif %}
+                
+                {% for page_num in pagination.iter_pages() %}
+                    {% if page_num %}
+                        <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
+                            <a class="page-link" href="{{ url_for('notification.index', page=page_num, type=filter_type) }}">{{ page_num }}</a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled"><span class="page-link">...</span></li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if pagination.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('notification.index', page=pagination.next_num, type=filter_type) }}">下一页</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fa fa-bell-slash-o fa-3x text-muted mb-3"></i>
+            <p class="text-muted">暂无通知</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function getCsrfToken() {
+    return document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+}
+
+function markAsRead(id) {
+    $.ajax({
+        url: '/notifications/' + id + '/read',
+        type: 'POST',
+        headers: {
+            'X-CSRFToken': getCsrfToken()
+        },
+        success: function(response) {
+            if (response.success) {
+                var item = $('#notif-' + id);
+                item.removeClass('list-group-item-light');
+                item.find('.badge.bg-danger').remove();
+                item.find('h5').removeClass('fw-bold');
+                item.find('.btn-outline-success').remove();
+                location.reload();
+            } else {
+                alert('标记失败：' + response.message);
+            }
+        },
+        error: function() {
+            alert('请求失败，请重试');
+        }
+    });
+}
+
+function markAllAsRead() {
+    if (!confirm('确定要标记所有通知为已读吗？')) return;
+    
+    $.ajax({
+        url: '/notifications/mark-all-read',
+        type: 'POST',
+        headers: {
+            'X-CSRFToken': getCsrfToken()
+        },
+        success: function() {
+            location.reload();
+        }
+    });
+}
+
+function deleteNotif(id) {
+    if (!confirm('确定要删除这条通知吗？')) return;
+    
+    $.ajax({
+        url: '/notifications/' + id + '/delete',
+        type: 'POST',
+        headers: {
+            'X-CSRFToken': getCsrfToken()
+        },
+        success: function() {
+            $('#notif-' + id).fadeOut();
+        }
+    });
+}
+
+function clearAll() {
+    if (!confirm('确定要清空所有通知吗？此操作不可恢复！')) return;
+    
+    $.ajax({
+        url: '/notifications/clear-all',
+        type: 'POST',
+        headers: {
+            'X-CSRFToken': getCsrfToken()
+        },
+        success: function() {
+            location.reload();
+        }
+    });
+}
+</script>
+{% endblock %}

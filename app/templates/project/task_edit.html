@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+
+{% block title %}编辑任务 - {{ task.title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('project.projects_list') }}">项目</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('project.teams_list') }}">小组</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('project.task_detail', task_id=task.id) }}">{{ task.title }}</a></li>
+                    <li class="breadcrumb-item active">编辑</li>
+                </ol>
+            </nav>
+            
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <a href="javascript:history.back()" class="btn btn-sm btn-outline-secondary me-2">
+                        <i class="fa fa-arrow-left"></i> 返回
+                    </a>
+                    <h2 class="d-inline mb-0"><i class="fas fa-edit"></i> 编辑任务</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">任务信息</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('project.edit_task', task_id=task.id) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                {{ form.title.label(class="form-label") }}
+                                {{ form.title(class="form-control", placeholder="输入任务标题") }}
+                                {% for error in form.title.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            
+                            <div class="col-md-6">
+                                {{ form.task_code.label(class="form-label") }}
+                                {{ form.task_code(class="form-control", placeholder="如：TASK-001") }}
+                                {% for error in form.task_code.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.description.label(class="form-label") }}
+                            {{ form.description(class="form-control", rows=4, placeholder="详细描述任务内容") }}
+                            {% for error in form.description.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                {{ form.team_id.label(class="form-label") }}
+                                <select name="team_id" class="form-select">
+                                    {% for team in teams %}
+                                    <option value="{{ team.id }}" {% if task.team_id == team.id %}selected{% endif %}>{{ team.team_name }}</option>
+                                    {% endfor %}
+                                </select>
+                                {% for error in form.team_id.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            
+                            <div class="col-md-6">
+                                {{ form.assigned_to.label(class="form-label") }}
+                                <select name="assigned_to" class="form-select">
+                                    <option value="">不分配</option>
+                                    {% for student in students %}
+                                    <option value="{{ student.id }}" {% if task.assigned_to == student.id %}selected{% endif %}>{{ student.student_id }} - {{ student.name }}</option>
+                                    {% endfor %}
+                                </select>
+                                <small class="text-muted">显示格式：学号 - 姓名</small>
+                                {% for error in form.assigned_to.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                {{ form.priority.label(class="form-label") }}
+                                {{ form.priority(class="form-select") }}
+                                {% for error in form.priority.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            
+                            <div class="col-md-4">
+                                {{ form.status.label(class="form-label") }}
+                                {{ form.status(class="form-select") }}
+                                {% for error in form.status.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            
+                            <div class="col-md-4">
+                                {{ form.progress.label(class="form-label") }}
+                                {{ form.progress(class="form-control", placeholder="0-100") }}
+                                {% for error in form.progress.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                {{ form.estimated_hours.label(class="form-label") }}
+                                {{ form.estimated_hours(class="form-control", step="0.5") }}
+                                {% for error in form.estimated_hours.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            
+                            <div class="col-md-4">
+                                {{ form.start_date.label(class="form-label") }}
+                                {% if start_date_str %}
+                                <input type="datetime-local" name="start_date" class="form-control" value="{{ start_date_str }}">
+                                {% else %}
+                                {{ form.start_date(class="form-control", type="datetime-local") }}
+                                {% endif %}
+                                {% for error in form.start_date.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            
+                            <div class="col-md-4">
+                                {{ form.due_date.label(class="form-label") }}
+                                {% if due_date_str %}
+                                <input type="datetime-local" name="due_date" class="form-control" value="{{ due_date_str }}">
+                                {% else %}
+                                {{ form.due_date(class="form-control", type="datetime-local") }}
+                                {% endif %}
+                                {% for error in form.due_date.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.tags.label(class="form-label") }}
+                            {{ form.tags(class="form-control", placeholder="标签，用逗号分隔，如：前端,重要,紧急") }}
+                            {% for error in form.tags.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                {{ form.actual_hours.label(class="form-label") }}
+                                {{ form.actual_hours(class="form-control", step="0.5") }}
+                                {% for error in form.actual_hours.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            
+                            <div class="col-md-6">
+                                {{ form.completion_note.label(class="form-label") }}
+                                {{ form.completion_note(class="form-control", rows=2) }}
+                                {% for error in form.completion_note.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                {{ form.screenshots.label(class="form-label") }}
+                                {{ form.screenshots(class="form-control", placeholder="截图URL，多个用逗号分隔") }}
+                                {% for error in form.screenshots.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            
+                            <div class="col-md-6">
+                                {{ form.related_bug_ids.label(class="form-label") }}
+                                {{ form.related_bug_ids(class="form-control", placeholder="Bug ID，多个用逗号分隔") }}
+                                {% for error in form.related_bug_ids.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('project.task_detail', task_id=task.id) }}" class="btn btn-secondary">取消</a>
+                            {{ form.submit(class="btn btn-primary") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-info-circle"></i> 任务信息</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <strong>创建时间：</strong>
+                            <span>{{ task.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                        </li>
+                        <li class="mb-2">
+                            <strong>最后更新：</strong>
+                            <span>{{ task.updated_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                        </li>
+                        {% if task.completed_at %}
+                        <li class="mb-2">
+                            <strong>完成时间：</strong>
+                            <span>{{ task.completed_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

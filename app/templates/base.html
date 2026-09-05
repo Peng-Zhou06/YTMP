@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="description" content="云智实训管理平台 - 学生实训项目管理系统">
+    <title>{% block title %}云智实训管理平台{% endblock %}</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.staticfile.org/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdn.staticfile.org/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <!-- 自定义样式 -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/global.css') }}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <div class="wrapper">
+        <!-- 侧边栏 -->
+        {% if current_user.is_authenticated %}
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h3><i class="fa fa-cloud"></i> <span>云智实训平台</span></h3>
+            </div>
+            <ul class="sidebar-menu">
+                <!-- 管理员菜单 -->
+                {% if current_user.role == 'admin' %}
+                <li class="menu-item {% if request.endpoint == 'system.dashboard' %}active{% endif %}">
+                    <a href="{{ url_for('system.dashboard') }}">
+                        <i class="fa fa-dashboard"></i> <span>仪表盘</span>
+                    </a>
+                </li>
+                
+                <li class="menu-header">系统管理</li>
+                <li class="menu-item {% if request.endpoint.startswith('student') %}active{% endif %}">
+                    <a href="{{ url_for('student.students_list') }}">
+                        <i class="fa fa-users"></i> <span>学生管理</span>
+                    </a>
+                </li>
+                <li class="menu-item {% if request.endpoint.startswith('course.courses') %}active{% endif %}">
+                    <a href="{{ url_for('course.courses_list') }}">
+                        <i class="fa fa-book"></i> <span>课程管理</span>
+                    </a>
+                </li>
+                <li class="menu-item {% if request.endpoint == 'system.users_list' %}active{% endif %}">
+                    <a href="{{ url_for('system.users_list') }}">
+                        <i class="fa fa-user-circle"></i> <span>用户管理</span>
+                    </a>
+                </li>
+                <li class="menu-item {% if request.endpoint.startswith('dept.') %}active{% endif %}">
+                    <a href="{{ url_for('dept.departments_list') }}">
+                        <i class="fa fa-building"></i> <span>学院专业管理</span>
+                    </a>
+                </li>
+                {% endif %}
+                
+                <!-- 教师菜单 -->
+                {% if current_user.role == 'teacher' %}
+                <li class="menu-header">教学管理</li>
+                <li class="menu-item {% if request.endpoint == 'project.teacher_dashboard' %}active{% endif %}">
+                    <a href="{{ url_for('project.teacher_dashboard') }}">
+                        <i class="fa fa-dashboard"></i> <span>数据驾驶舱</span>
+                    </a>
+                </li>
+                <li class="menu-item {% if request.endpoint.startswith('course.courses') %}active{% endif %}">
+                    <a href="{{ url_for('course.courses_list') }}">
+                        <i class="fa fa-book"></i> <span>课程管理</span>
+                    </a>
+                </li>
+                <li class="menu-item {% if request.endpoint.startswith('score') and not request.endpoint.startswith('score.student_scores') %}active{% endif %}">
+                    <a href="{{ url_for('score.scores_list') }}">
+                        <i class="fa fa-bar-chart"></i> <span>成绩管理</span>
+                    </a>
+                </li>
+                {% endif %}
+                
+                <!-- 学生菜单 -->
+                {% if current_user.role == 'student' %}
+                <li class="menu-header">我的学习</li>
+                <li class="menu-item {% if request.endpoint == 'project.student_stats' %}active{% endif %}">
+                    <a href="{{ url_for('project.student_stats') }}">
+                        <i class="fa fa-bar-chart"></i> <span>个人统计</span>
+                    </a>
+                </li>
+                <li class="menu-item {% if request.endpoint == 'course.my_courses' %}active{% endif %}">
+                    <a href="{{ url_for('course.my_courses') }}">
+                        <i class="fa fa-book"></i> <span>我的课程</span>
+                    </a>
+                </li>
+                <li class="menu-item {% if request.endpoint == 'score.student_scores' %}active{% endif %}">
+                    <a href="{{ url_for('score.student_scores') }}">
+                        <i class="fa fa-list"></i> <span>我的成绩</span>
+                    </a>
+                </li>
+                {% endif %}
+                
+                <!-- 实训项目菜单（所有角色） -->
+                <li class="menu-header">实训项目</li>
+                <li class="menu-item {% if request.endpoint.startswith('project.projects') or request.endpoint.startswith('course.projects') %}active{% endif %}">
+                    <a href="{{ url_for('project.projects_list') }}">
+                        <i class="fa fa-folder-open"></i> <span>项目管理</span>
+                    </a>
+                </li>
+                <li class="menu-item {% if request.endpoint.startswith('project.teams') %}active{% endif %}">
+                    <a href="{{ url_for('project.teams_list') }}">
+                        <i class="fa fa-group"></i> <span>小组管理</span>
+                    </a>
+                </li>
+                <li class="menu-item {% if request.endpoint.startswith('project.tasks') %}active{% endif %}">
+                    <a href="{{ url_for('project.tasks_list') }}">
+                        <i class="fa fa-tasks"></i> <span>任务管理</span>
+                    </a>
+                </li>
+                
+                <!-- 教师和学生菜单 -->
+                {% if current_user.role in ['teacher', 'student'] %}
+                <li class="menu-header">日常工作</li>
+                <li class="menu-item {% if request.endpoint.startswith('project.daily_reports') %}active{% endif %}">
+                    <a href="{{ url_for('project.daily_reports_list') }}">
+                        <i class="fa fa-file-text"></i> <span>日报管理</span>
+                    </a>
+                </li>
+                <li class="menu-item {% if request.endpoint.startswith('project.bugs') %}active{% endif %}">
+                    <a href="{{ url_for('project.bugs_list') }}">
+                        <i class="fa fa-bug"></i> <span>Bug管理</span>
+                    </a>
+                </li>
+                <li class="menu-item {% if request.endpoint.startswith('project.ai_records') %}active{% endif %}">
+                    <a href="{{ url_for('project.ai_records_list') }}">
+                        <i class="fa fa-robot"></i> <span>AI辅助记录</span>
+                    </a>
+                </li>
+                {% endif %}
+                
+                <!-- 开发工具 -->
+                {% if current_user.role in ['admin', 'teacher', 'student'] %}
+                <li class="menu-header">开发工具</li>
+                <li class="menu-item {% if request.endpoint.startswith('project.crawler') %}active{% endif %}">
+                    <a href="{{ url_for('project.crawler_data_list') }}">
+                        <i class="fa fa-spider"></i> <span>爬虫数据</span>
+                    </a>
+                </li>
+                <li class="menu-item {% if request.endpoint.startswith('project.jobs') %}active{% endif %}">
+                    <a href="{{ url_for('project.job_postings_list') }}">
+                        <i class="fa fa-briefcase"></i> <span>岗位采集</span>
+                    </a>
+                </li>
+                <li class="menu-item {% if request.endpoint.startswith('project.deployments') %}active{% endif %}">
+                    <a href="{{ url_for('project.deployments_list') }}">
+                        <i class="fa fa-rocket"></i> <span>部署管理</span>
+                    </a>
+                </li>
+                {% endif %}
+                
+                <!-- 系统设置（仅管理员） -->
+                {% if current_user.role == 'admin' %}
+                <li class="menu-header">系统</li>
+                <li class="menu-item {% if request.endpoint == 'system.logs_list' %}active{% endif %}">
+                    <a href="{{ url_for('system.logs_list') }}">
+                        <i class="fa fa-history"></i> <span>操作日志</span>
+                    </a>
+                </li>
+                <li class="menu-item {% if request.endpoint == 'system.system_settings' %}active{% endif %}">
+                    <a href="{{ url_for('system.system_settings') }}">
+                        <i class="fa fa-cog"></i> <span>系统设置</span>
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </aside>
+        {% endif %}
+        
+        <!-- 主内容区 -->
+        <div class="main">
+            <!-- 顶部导航栏 -->
+            {% if current_user.is_authenticated %}
+            <nav class="top-navbar">
+                <button type="button" class="sidebar-toggle" id="sidebarToggle">
+                    <i class="fa fa-bars"></i>
+                </button>
+                <div class="navbar-right">
+                    <!-- 通知铃铛 -->
+                    <button class="notification-btn" id="notificationBtn" data-bs-toggle="dropdown">
+                        <i class="fa fa-bell"></i>
+                        <span class="notification-badge" id="notificationBadge" style="display: none;">0</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="notificationBtn" style="width: 320px; max-height: 400px; overflow-y: auto;">
+                        <li class="dropdown-header d-flex justify-content-between align-items-center">
+                            <strong>通知</strong>
+                            <a href="{{ url_for('notification.index') }}" class="small">查看全部</a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <div id="notificationList">
+                            <li class="dropdown-item text-center text-muted py-3">
+                                <i class="fa fa-spinner fa-spin"></i> 加载中...
+                            </li>
+                        </div>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <button class="dropdown-item text-center text-primary" onclick="markAllAsRead()">
+                                <i class="fa fa-check"></i> 全部标记为已读
+                            </button>
+                        </li>
+                    </ul>
+                    
+                    <!-- 用户下拉菜单 -->
+                    <div class="dropdown">
+                        <div class="user-dropdown" data-bs-toggle="dropdown">
+                            {% if current_user.avatar %}
+                                <img src="{{ url_for('static', filename=current_user.avatar) }}" alt="头像" class="user-avatar">
+                            {% else %}
+                                <div class="user-avatar-placeholder">
+                                    <i class="fa fa-user"></i>
+                                </div>
+                            {% endif %}
+                            <div class="user-info">
+                                <span class="user-name">{{ current_user.name }}</span>
+                                <span class="user-role">{{ current_user.role }}</span>
+                            </div>
+                            <i class="fa fa-angle-down ms-2 text-secondary"></i>
+                        </div>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="{{ url_for('auth.profile') }}"><i class="fa fa-user-circle"></i> 个人中心</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('announcement.index') }}"><i class="fa fa-bullhorn"></i> 系统公告</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}"><i class="fa fa-sign-out"></i> 退出登录</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </nav>
+            {% endif %}
+            
+            <!-- 内容区域 -->
+            <div class="content">
+                <!-- 页面标题 -->
+                {% if self.page_title()|trim %}
+                <div class="page-header">
+                    <div>
+                        <h1 class="page-title">{% block page_title %}{% endblock %}</h1>
+                        {% if self.page_subtitle()|trim %}
+                        <p class="page-subtitle">{% block page_subtitle %}{% endblock %}</p>
+                        {% endif %}
+                    </div>
+                    {% block page_actions %}{% endblock %}
+                </div>
+                {% endif %}
+                
+                <!-- 消息提示 -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }} alert-dismissible fade show auto-dismiss" role="alert" data-category="{{ category }}">
+                                <i class="fa fa-{% if category == 'success' %}check-circle{% elif category == 'danger' %}exclamation-circle{% elif category == 'warning' %}warning{% else %}info{% endif %}"></i>
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+                
+                <!-- 页面内容 -->
+                {% block content %}{% endblock %}
+            </div>
+            
+            <!-- 页脚 -->
+            <footer class="footer">
+                <p>© 2025 云智实训平台 · 学生成绩管理系统</p>
+            </footer>
+        </div>
+    </div>
+    
+    <!-- jQuery -->
+    <script src="https://cdn.staticfile.org/jquery/3.6.0/jquery.min.js"></script>
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.staticfile.org/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    <!-- 自定义JS -->
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    
+    <!-- 消息提示自动消失 -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // 自动关闭消息提示
+        const alerts = document.querySelectorAll('.auto-dismiss');
+        alerts.forEach(function(alert) {
+            const category = alert.getAttribute('data-category');
+            // 成功提示3秒消失，错误提示7秒消失，其他提示5秒消失
+            const delay = category === 'success' ? 3000 : (category === 'danger' ? 7000 : 5000);
+            
+            setTimeout(function() {
+                const bsAlert = new bootstrap.Alert(alert);
+                bsAlert.close();
+            }, delay);
+        });
+    });
+    </script>
+    
+    <!-- 侧边栏折叠功能 -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        const sidebar = document.getElementById('sidebar');
+        
+        if (sidebarToggle && sidebar) {
+            sidebarToggle.addEventListener('click', function() {
+                sidebar.classList.toggle('collapsed');
+            });
+        }
+    });
+    </script>
+    
+    <!-- 通知功能 -->
+    {% if current_user.is_authenticated %}
+    <script>
+    // 加载通知列表
+    function loadNotifications() {
+        fetch('/notifications/api/recent')
+            .then(res => res.json())
+            .then(data => {
+                const list = document.getElementById('notificationList');
+                const badge = document.getElementById('notificationBadge');
+                
+                if (data.notifications && data.notifications.length > 0) {
+                    let html = '';
+                    data.notifications.forEach(function(n) {
+                        const icon = n.type === 'system' ? 'fa-cog' : 
+                                     n.type === 'course' ? 'fa-book' : 
+                                     n.type === 'score' ? 'fa-graduation-cap' : 'fa-bell';
+                        const readClass = n.is_read ? '' : 'fw-bold';
+                        const bgClass = n.is_read ? '' : 'bg-light';
+                        html += '<li><a class="dropdown-item ' + bgClass + ' ' + readClass + '" href="#" onclick="markAsRead(' + n.id + '); return false;">' +
+                                '<i class="fa ' + icon + ' text-secondary me-2"></i>' +
+                                '<div class="d-inline">' +
+                                '<div class="small">' + escapeHtml(n.title) + '</div>' +
+                                '<div class="text-muted" style="font-size: 11px;">' + n.created_at + '</div>' +
+                                '</div></a></li>';
+                    });
+                    list.innerHTML = html;
+                    
+                    // 更新未读数量角标
+                    if (data.unread_count > 0) {
+                        badge.textContent = data.unread_count;
+                        badge.style.display = 'inline-block';
+                    } else {
+                        badge.style.display = 'none';
+                    }
+                } else {
+                    list.innerHTML = '<li class="dropdown-item text-center text-muted py-3"><i class="fa fa-inbox"></i> 暂无通知</li>';
+                    badge.style.display = 'none';
+                }
+            })
+            .catch(err => {
+                document.getElementById('notificationList').innerHTML = 
+                    '<li class="dropdown-item text-center text-muted py-3"><i class="fa fa-exclamation-triangle text-warning"></i> 加载失败</li>';
+            });
+    }
+    
+    // 标记单条通知为已读
+    function markAsRead(id) {
+        fetch('/notifications/' + id + '/read', { method: 'POST' })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    loadNotifications();
+                }
+            });
+    }
+    
+    // 全部标记为已读
+    function markAllAsRead() {
+        fetch('/notifications/mark-all-read', { method: 'POST' })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    loadNotifications();
+                }
+            });
+    }
+    
+    // 点击通知铃铛时加载通知
+    document.addEventListener('DOMContentLoaded', function() {
+        const btn = document.getElementById('notificationBtn');
+        if (btn) {
+            btn.addEventListener('click', function() {
+                loadNotifications();
+            });
+        }
+    });
+    
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text || '';
+        return div.innerHTML;
+    }
+    </script>
+    {% endif %}
+    
+    <!-- AI 悬浮窗 -->
+    {% if current_user.is_authenticated %}
+    <style>
+    #ai-float-btn {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: white;
+        color: var(--primary-color);
+        border: 2px solid var(--primary-color);
+        cursor: grab;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 26px;
+        transition: box-shadow 0.3s ease, transform 0.2s ease, background 0.2s ease;
+        user-select: none;
+    }
+    #ai-float-btn:hover {
+        transform: scale(1.1);
+        box-shadow: 0 6px 20px rgba(13, 148, 136, 0.3);
+        background: var(--primary-color);
+        color: white;
+    }
+    #ai-float-btn.dragging {
+        cursor: grabbing;
+        transition: none;
+        transform: scale(1.15);
+    }
+    #ai-chat-window {
+        position: fixed;
+        bottom: 100px;
+        right: 30px;
+        width: 420px;
+        height: 600px;
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        z-index: 9998;
+        display: none;
+        flex-direction: column;
+        overflow: hidden;
+        animation: slideUp 0.3s ease;
+    }
+    @keyframes slideUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    #ai-chat-window.active {
+        display: flex;
+    }
+    #ai-chat-header {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+        color: white;
+        padding: 15px 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        cursor: grab;
+    }
+    #ai-chat-header:active {
+        cursor: grabbing;
+    }
+    #ai-chat-header h5 {
+        margin: 0;
+        font-size: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    #ai-chat-header .btn-close-chat {
+        background: none;
+        border: none;
+        color: white;
+        font-size: 20px;
+        cursor: pointer;
+        padding: 0;
+        opacity: 0.8;
+        transition: opacity 0.2s;
+    }
+    #ai-chat-header .btn-close-chat:hover {
+        opacity: 1;
+    }
+    #ai-chat-quick-actions {
+        padding: 10px 15px;
+        background: #f8f9fa;
+        border-bottom: 1px solid #e9ecef;
+        display: flex;
+        gap: 8px;
+        overflow-x: auto;
+        flex-shrink: 0;
+    }
+    #ai-chat-quick-actions .btn-quick {
+        white-space: nowrap;
+        font-size: 12px;
+        padding: 5px 12px;
+        border-radius: 15px;
+        border: 1px solid #dee2e6;
+        background: white;
+        color: #495057;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    #ai-chat-quick-actions .btn-quick:hover {
+        background: var(--primary-color);
+        color: white;
+        border-color: var(--primary-color);
+    }
+    #ai-chat-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 15px;
+        background: #f5f7fa;
+    }
+    .ai-msg {
+        display: flex;
+        margin-bottom: 15px;
+        align-items: flex-start;
+    }
+    .ai-msg .msg-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 14px;
+        flex-shrink: 0;
+        margin-right: 10px;
+    }
+    .ai-msg .msg-content {
+        background: white;
+        padding: 10px 15px;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        max-width: calc(100% - 50px);
+        word-break: break-word;
+        font-size: 14px;
+        line-height: 1.6;
+        user-select: text;
+    }
+    .ai-msg.user-msg {
+        flex-direction: row-reverse;
+    }
+    .ai-msg.user-msg .msg-avatar {
+        margin-right: 0;
+        margin-left: 10px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .ai-msg.user-msg .msg-content {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+        color: white;
+    }
+    #ai-chat-input {
+        padding: 15px;
+        background: white;
+        border-top: 1px solid #e9ecef;
+        display: flex;
+        gap: 10px;
+    }
+    #ai-chat-input input {
+        flex: 1;
+        border: 1px solid #dee2e6;
+        border-radius: 20px;
+        padding: 8px 15px;
+        font-size: 14px;
+        outline: none;
+    }
+    #ai-chat-input input:focus {
+        border-color: var(--primary-color);
+    }
+    #ai-chat-input button {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 36px;
+        height: 36px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    #ai-chat-input button:hover {
+        opacity: 0.9;
+    }
+    </style>
+    
+    <div id="ai-float-btn" title="AI智能助手">
+        <i class="fa fa-robot"></i>
+    </div>
+    
+    <div id="ai-chat-window">
+        <div id="ai-chat-header">
+            <h5><i class="fa fa-robot"></i> AI智能助手</h5>
+            <button class="btn-close-chat" onclick="toggleAIChat()"><i class="fa fa-times"></i></button>
+        </div>
+        <div id="ai-chat-quick-actions">
+            <button class="btn-quick" onclick="sendQuickMsg('帮我写一段Python代码')"> 写代码</button>
+            <button class="btn-quick" onclick="sendQuickMsg('解释一下这个概念')">📖 解释概念</button>
+            <button class="btn-quick" onclick="sendQuickMsg('帮我debug这段代码')">🐛 调试代码</button>
+            <button class="btn-quick" onclick="sendQuickMsg('推荐学习资源')"> 学习资源</button>
+        </div>
+        <div id="ai-chat-messages">
+            <div class="ai-msg">
+                <div class="msg-avatar"><i class="fa fa-robot"></i></div>
+                <div class="msg-content">你好！我是AI智能助手，有什么可以帮你的吗？</div>
+            </div>
+        </div>
+        <div id="ai-chat-input">
+            <input type="text" id="ai-input" placeholder="输入你的问题..." onkeypress="if(event.key==='Enter')sendAIMessage()">
+            <button onclick="sendAIMessage()"><i class="fa fa-paper-plane"></i></button>
+        </div>
+    </div>
+    
+    <script>
+    // AI悬浮窗拖拽功能
+    (function() {
+        const floatBtn = document.getElementById('ai-float-btn');
+        const chatWindow = document.getElementById('ai-chat-window');
+        const chatHeader = document.getElementById('ai-chat-header');
+        
+        if (!floatBtn || !chatWindow) return;
+        
+        let isDragging = false;
+        let startX, startY, startLeft, startTop;
+        let hasMoved = false;
+        
+        // 悬浮按钮拖拽
+        floatBtn.addEventListener('mousedown', function(e) {
+            if (e.button !== 0) return;
+            isDragging = true;
+            hasMoved = false;
+            floatBtn.classList.add('dragging');
+            
+            const rect = floatBtn.getBoundingClientRect();
+            startX = e.clientX;
+            startY = e.clientY;
+            startLeft = rect.left;
+            startTop = rect.top;
+            
+            e.preventDefault();
+        });
+        
+        document.addEventListener('mousemove', function(e) {
+            if (!isDragging) return;
+            
+            const dx = e.clientX - startX;
+            const dy = e.clientY - startY;
+            
+            if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+                hasMoved = true;
+            }
+            
+            floatBtn.style.left = (startLeft + dx) + 'px';
+            floatBtn.style.top = (startTop + dy) + 'px';
+            floatBtn.style.right = 'auto';
+            floatBtn.style.bottom = 'auto';
+        });
+        
+        document.addEventListener('mouseup', function(e) {
+            if (!isDragging) return;
+            isDragging = false;
+            floatBtn.classList.remove('dragging');
+        });
+        
+        // 点击悬浮按钮（非拖拽时）
+        floatBtn.addEventListener('click', function(e) {
+            if (hasMoved) return;
+            toggleAIChat();
+        });
+        
+        // 聊天窗口拖拽
+        let chatDragging = false;
+        let chatStartX, chatStartY, chatStartLeft, chatStartTop;
+        
+        chatHeader.addEventListener('mousedown', function(e) {
+            if (e.button !== 0) return;
+            chatDragging = true;
+            
+            const rect = chatWindow.getBoundingClientRect();
+            chatStartX = e.clientX;
+            chatStartY = e.clientY;
+            chatStartLeft = rect.left;
+            chatStartTop = rect.top;
+            
+            e.preventDefault();
+        });
+        
+        document.addEventListener('mousemove', function(e) {
+            if (!chatDragging) return;
+            
+            const dx = e.clientX - chatStartX;
+            const dy = e.clientY - chatStartY;
+            
+            chatWindow.style.left = (chatStartLeft + dx) + 'px';
+            chatWindow.style.top = (chatStartTop + dy) + 'px';
+            chatWindow.style.right = 'auto';
+            chatWindow.style.bottom = 'auto';
+        });
+        
+        document.addEventListener('mouseup', function() {
+            chatDragging = false;
+        });
+    })();
+    
+    function toggleAIChat() {
+        const chatWindow = document.getElementById('ai-chat-window');
+        chatWindow.classList.toggle('active');
+    }
+    
+    function sendQuickMsg(msg) {
+        document.getElementById('ai-input').value = msg;
+        sendAIMessage();
+    }
+    
+    function sendAIMessage() {
+        const input = document.getElementById('ai-input');
+        const msg = input.value.trim();
+        if (!msg) return;
+        
+        const messagesDiv = document.getElementById('ai-chat-messages');
+        
+        // 添加用户消息
+        messagesDiv.innerHTML += '<div class="ai-msg user-msg"><div class="msg-avatar"><i class="fa fa-user"></i></div><div class="msg-content">' + escapeHtml(msg) + '</div></div>';
+        input.value = '';
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        
+        // 添加加载动画
+        messagesDiv.innerHTML += '<div class="ai-msg" id="ai-loading"><div class="msg-avatar"><i class="fa fa-robot"></i></div><div class="msg-content"><i class="fa fa-spinner fa-spin"></i> 思考中...</div></div>';
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        
+        // 发送请求
+        fetch('/api/ai/chat', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+            },
+            body: JSON.stringify({ message: msg })
+        })
+        .then(res => res.json())
+        .then(data => {
+            const loading = document.getElementById('ai-loading');
+            if (loading) loading.remove();
+            
+            if (data.success) {
+                messagesDiv.innerHTML += '<div class="ai-msg"><div class="msg-avatar"><i class="fa fa-robot"></i></div><div class="msg-content">' + escapeHtml(data.reply) + '</div></div>';
+            } else {
+                messagesDiv.innerHTML += '<div class="ai-msg"><div class="msg-avatar"><i class="fa fa-robot"></i></div><div class="msg-content">抱歉，出现了一些问题：' + escapeHtml(data.error || '未知错误') + '</div></div>';
+            }
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        })
+        .catch(err => {
+            const loading = document.getElementById('ai-loading');
+            if (loading) loading.remove();
+            messagesDiv.innerHTML += '<div class="ai-msg"><div class="msg-avatar"><i class="fa fa-robot"></i></div><div class="msg-content">网络错误，请稍后重试</div></div>';
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        });
+    }
+    
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    </script>
+    {% endif %}
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

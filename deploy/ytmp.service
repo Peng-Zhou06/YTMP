@@ -1,0 +1,25 @@
+[Unit]
+Description=YTMP 云智实训管理平台
+After=network.target mysql.service
+
+[Service]
+Type=notify
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/YTMP
+Environment=PATH=/var/www/YTMP/venv/bin
+ExecStart=/var/www/YTMP/venv/bin/gunicorn -w 4 -b 0.0.0.0:5000 --timeout 120 --access-logfile /var/log/YTMP/access.log --error-logfile /var/log/YTMP/error.log main:app
+
+# 自动重启
+Restart=always
+RestartSec=10
+
+# 安全设置
+NoNewPrivileges=true
+PrivateTmp=true
+
+# 资源限制
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,592 @@
+{% extends 'base.html' %}
+
+{% block title %}登录 - 云智实训平台{% endblock %}
+
+{% block extra_css %}
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: 'Microsoft YaHei', 'PingFang SC', Arial, sans-serif;
+        background: linear-gradient(135deg, #f5f7fa 0%, #e8f4f8 50%, #f0f7ff 100%);
+        min-height: 100vh;
+        overflow: hidden;
+        position: relative;
+    }
+
+    /* 背景动画粒子 */
+    .bg-particles {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 0;
+    }
+
+    .particle {
+        position: absolute;
+        background: rgba(100, 180, 255, 0.1);
+        border-radius: 50%;
+        animation: float 20s infinite ease-in-out;
+    }
+
+    .particle:nth-child(1) { width: 80px; height: 80px; left: 10%; top: 20%; animation-delay: 0s; }
+    .particle:nth-child(2) { width: 60px; height: 60px; left: 80%; top: 30%; animation-delay: 2s; }
+    .particle:nth-child(3) { width: 100px; height: 100px; left: 50%; top: 70%; animation-delay: 4s; }
+    .particle:nth-child(4) { width: 40px; height: 40px; left: 30%; top: 80%; animation-delay: 6s; }
+    .particle:nth-child(5) { width: 70px; height: 70px; left: 70%; top: 10%; animation-delay: 8s; }
+
+    @keyframes float {
+        0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.3; }
+        50% { transform: translateY(-30px) rotate(180deg); opacity: 0.6; }
+    }
+
+    /* 主容器 */
+    .login-wrapper {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        padding: 2rem;
+        position: relative;
+        z-index: 1;
+    }
+
+    .login-container {
+        display: flex;
+        align-items: center;
+        max-width: 1100px;
+        width: 100%;
+        gap: 4rem;
+    }
+
+    /* 左侧科技插画区域 */
+    .illustration-side {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+    }
+
+    .tech-illustration {
+        width: 100%;
+        max-width: 450px;
+        position: relative;
+    }
+
+    /* 2.5D等轴测科技元素 */
+    .iso-container {
+        position: relative;
+        width: 100%;
+        height: 400px;
+        transform: perspective(1000px) rotateX(10deg) rotateY(-10deg);
+        transform-style: preserve-3d;
+    }
+
+    .iso-card {
+        position: absolute;
+        background: linear-gradient(135deg, rgba(255,255,255,0.8) 0%, rgba(200,230,255,0.6) 100%);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(100, 180, 255, 0.3);
+        border-radius: 12px;
+        box-shadow: 
+            0 8px 32px rgba(100, 180, 255, 0.15),
+            inset 0 1px 0 rgba(255,255,255,0.8);
+        animation: cardFloat 6s infinite ease-in-out;
+    }
+
+    .iso-card:nth-child(1) {
+        width: 180px;
+        height: 120px;
+        top: 50px;
+        left: 50px;
+        animation-delay: 0s;
+    }
+
+    .iso-card:nth-child(2) {
+        width: 150px;
+        height: 100px;
+        top: 120px;
+        left: 180px;
+        animation-delay: 1s;
+    }
+
+    .iso-card:nth-child(3) {
+        width: 200px;
+        height: 80px;
+        top: 200px;
+        left: 80px;
+        animation-delay: 2s;
+    }
+
+    @keyframes cardFloat {
+        0%, 100% { transform: translateZ(0) translateY(0); }
+        50% { transform: translateZ(20px) translateY(-10px); }
+    }
+
+    /* 芯片基座 */
+    .chip-base {
+        position: absolute;
+        bottom: 50px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 120px;
+        height: 80px;
+        background: linear-gradient(135deg, #e0f0ff 0%, #b8d8f8 100%);
+        border-radius: 8px;
+        box-shadow: 
+            0 4px 20px rgba(100, 180, 255, 0.3),
+            inset 0 2px 4px rgba(255,255,255,0.8);
+    }
+
+    .chip-base::before {
+        content: '';
+        position: absolute;
+        top: -10px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 60px;
+        height: 20px;
+        background: linear-gradient(135deg, #a0d0ff 0%, #80c0f0 100%);
+        border-radius: 4px;
+    }
+
+    /* 数据流线路 */
+    .data-line {
+        position: absolute;
+        height: 2px;
+        background: linear-gradient(90deg, transparent, rgba(100, 180, 255, 0.6), transparent);
+        animation: dataFlow 3s infinite linear;
+    }
+
+    .data-line:nth-child(1) { width: 100px; top: 100px; left: 0; animation-delay: 0s; }
+    .data-line:nth-child(2) { width: 80px; top: 180px; left: 100px; animation-delay: 1s; }
+    .data-line:nth-child(3) { width: 120px; top: 250px; left: 50px; animation-delay: 2s; }
+
+    @keyframes dataFlow {
+        0% { opacity: 0; transform: translateX(-100%); }
+        50% { opacity: 1; }
+        100% { opacity: 0; transform: translateX(100%); }
+    }
+
+    /* 发光点 */
+    .glow-dot {
+        position: absolute;
+        width: 8px;
+        height: 8px;
+        background: #64b4ff;
+        border-radius: 50%;
+        box-shadow: 0 0 10px #64b4ff, 0 0 20px rgba(100, 180, 255, 0.5);
+        animation: glowPulse 2s infinite ease-in-out;
+    }
+
+    .glow-dot:nth-child(1) { top: 80px; left: 100px; animation-delay: 0s; }
+    .glow-dot:nth-child(2) { top: 150px; left: 200px; animation-delay: 0.5s; }
+    .glow-dot:nth-child(3) { top: 220px; left: 150px; animation-delay: 1s; }
+
+    @keyframes glowPulse {
+        0%, 100% { transform: scale(1); opacity: 0.6; }
+        50% { transform: scale(1.5); opacity: 1; }
+    }
+
+    /* 平台标题 */
+    .platform-title {
+        margin-top: 2rem;
+        text-align: center;
+    }
+
+    .platform-title h2 {
+        font-size: 1.8rem;
+        font-weight: 700;
+        background: linear-gradient(135deg, #4a90d9 0%, #64b4ff 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-bottom: 0.5rem;
+    }
+
+    .platform-title p {
+        color: #8899aa;
+        font-size: 0.95rem;
+    }
+
+    /* 右侧登录卡片 */
+    .login-card-side {
+        flex: 0 0 420px;
+    }
+
+    .login-card {
+        background: rgba(255, 255, 255, 0.75);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(100, 180, 255, 0.2);
+        border-radius: 20px;
+        padding: 2.5rem;
+        box-shadow: 
+            0 8px 40px rgba(100, 180, 255, 0.15),
+            0 0 0 1px rgba(255, 255, 255, 0.5) inset,
+            0 0 30px rgba(100, 180, 255, 0.1);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .login-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, #4a90d9, #64b4ff, #4a90d9);
+        background-size: 200% 100%;
+        animation: shimmer 3s infinite linear;
+    }
+
+    @keyframes shimmer {
+        0% { background-position: -200% 0; }
+        100% { background-position: 200% 0; }
+    }
+
+    .login-card-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    .login-card-header h1 {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: #2c3e50;
+        margin-bottom: 0.5rem;
+    }
+
+    .login-card-header p {
+        color: #8899aa;
+        font-size: 0.9rem;
+    }
+
+    /* 表单样式 */
+    .form-group {
+        margin-bottom: 1.5rem;
+        position: relative;
+    }
+
+    .input-wrapper {
+        position: relative;
+    }
+
+    .input-wrapper i {
+        position: absolute;
+        left: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #a0b8cc;
+        font-size: 1.1rem;
+        transition: color 0.3s ease;
+        z-index: 1;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 0.9rem 1rem 0.9rem 2.8rem;
+        border: 1px solid rgba(100, 180, 255, 0.2);
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.8);
+        font-size: 0.95rem;
+        color: #2c3e50;
+        transition: all 0.3s ease;
+        outline: none;
+    }
+
+    .form-control:focus {
+        border-color: #64b4ff;
+        box-shadow: 0 0 0 3px rgba(100, 180, 255, 0.15);
+        background: rgba(255, 255, 255, 0.95);
+    }
+
+    .form-control:focus + i,
+    .input-wrapper:focus-within i {
+        color: #64b4ff;
+    }
+
+    .form-control::placeholder {
+        color: #b0c4d8;
+    }
+
+    /* 记住我复选框 */
+    .form-check {
+        display: flex;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .form-check-input {
+        width: 18px;
+        height: 18px;
+        margin-right: 0.5rem;
+        border: 2px solid rgba(100, 180, 255, 0.3);
+        border-radius: 4px;
+        cursor: pointer;
+        accent-color: #64b4ff;
+    }
+
+    .form-check-label {
+        color: #667788;
+        font-size: 0.9rem;
+        cursor: pointer;
+    }
+
+    /* 登录按钮 */
+    .btn-login {
+        width: 100%;
+        padding: 0.9rem;
+        background: linear-gradient(135deg, #4a90d9 0%, #64b4ff 100%);
+        border: none;
+        border-radius: 12px;
+        color: white;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(100, 180, 255, 0.3);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .btn-login:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 25px rgba(100, 180, 255, 0.4);
+    }
+
+    .btn-login:active {
+        transform: translateY(0);
+    }
+
+    .btn-login::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 0;
+        height: 0;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        transition: width 0.6s, height 0.6s;
+    }
+
+    .btn-login:active::after {
+        width: 300px;
+        height: 300px;
+    }
+
+    /* 版权文字 */
+    .login-footer {
+        text-align: center;
+        margin-top: 2rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid rgba(100, 180, 255, 0.1);
+    }
+
+    .login-footer p {
+        color: #a0b0c0;
+        font-size: 0.8rem;
+    }
+
+    /* 错误提示 */
+    .alert {
+        padding: 0.8rem 1rem;
+        border-radius: 10px;
+        margin-bottom: 1rem;
+        font-size: 0.9rem;
+        border: none;
+    }
+
+    .alert-danger {
+        background: rgba(231, 76, 60, 0.1);
+        color: #e74c3c;
+        border-left: 3px solid #e74c3c;
+    }
+
+    .alert-success {
+        background: rgba(46, 204, 113, 0.1);
+        color: #2ecc71;
+        border-left: 3px solid #2ecc71;
+    }
+
+    .alert-warning {
+        background: rgba(243, 156, 18, 0.1);
+        color: #f39c12;
+        border-left: 3px solid #f39c12;
+    }
+
+    /* 响应式设计 */
+    @media (max-width: 900px) {
+        .login-container {
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .illustration-side {
+            display: none;
+        }
+
+        .login-card-side {
+            flex: 0 0 auto;
+            width: 100%;
+            max-width: 420px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .login-wrapper {
+            padding: 1rem;
+        }
+
+        .login-card {
+            padding: 1.5rem;
+        }
+    }
+
+    /* 加载动画 */
+    .loading-spinner {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 2px solid rgba(255,255,255,0.3);
+        border-radius: 50%;
+        border-top-color: white;
+        animation: spin 0.8s linear infinite;
+        margin-right: 0.5rem;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- 背景粒子 -->
+<div class="bg-particles">
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+</div>
+
+<div class="login-wrapper">
+    <div class="login-container">
+        <!-- 左侧科技插画 -->
+        <div class="illustration-side">
+            <div class="tech-illustration">
+                <div class="iso-container">
+                    <!-- 2.5D卡片 -->
+                    <div class="iso-card"></div>
+                    <div class="iso-card"></div>
+                    <div class="iso-card"></div>
+                    
+                    <!-- 数据流线路 -->
+                    <div class="data-line"></div>
+                    <div class="data-line"></div>
+                    <div class="data-line"></div>
+                    
+                    <!-- 发光点 -->
+                    <div class="glow-dot"></div>
+                    <div class="glow-dot"></div>
+                    <div class="glow-dot"></div>
+                    
+                    <!-- 芯片基座 -->
+                    <div class="chip-base"></div>
+                </div>
+            </div>
+            
+            <div class="platform-title">
+                <h2>云智实训平台</h2>
+                <p>智能化教学管理与实训系统</p>
+            </div>
+        </div>
+
+        <!-- 右侧登录卡片 -->
+        <div class="login-card-side">
+            <div class="login-card">
+                <div class="login-card-header">
+                    <h1>登录</h1>
+                    <p>欢迎回来，请登录您的账号</p>
+                </div>
+
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }}">
+                                <i class="fa fa-info-circle"></i> {{ message }}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <form method="POST" action="{{ url_for('auth.login') }}" id="loginForm">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="form-group">
+                        <div class="input-wrapper">
+                            <i class="fa fa-user"></i>
+                            {{ form.username(class="form-control", placeholder="请输入用户名") }}
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <div class="input-wrapper">
+                            <i class="fa fa-lock"></i>
+                            {{ form.password(class="form-control", placeholder="请输入密码") }}
+                        </div>
+                    </div>
+                    
+                    <div class="form-check">
+                        {{ form.remember(class="form-check-input", id="remember") }}
+                        {{ form.remember.label(class="form-check-label", for="remember") }}
+                    </div>
+                    
+                    <button type="submit" class="btn-login" id="loginBtn">
+                        <i class="fa fa-sign-in"></i> 登录
+                    </button>
+                </form>
+
+                <div class="login-footer">
+                    <p>&copy; 2025 云智实训平台 · 学生成绩管理系统</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // 表单提交动画
+    document.getElementById('loginForm').addEventListener('submit', function(e) {
+        const btn = document.getElementById('loginBtn');
+        btn.innerHTML = '<span class="loading-spinner"></span> 登录中...';
+        btn.disabled = true;
+    });
+
+    // 输入框焦点效果
+    document.querySelectorAll('.form-control').forEach(input => {
+        input.addEventListener('focus', function() {
+            this.parentElement.classList.add('focused');
+        });
+        input.addEventListener('blur', function() {
+            this.parentElement.classList.remove('focused');
+        });
+    });
+</script>
+{% endblock %}

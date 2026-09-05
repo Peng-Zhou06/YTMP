@@ -1,0 +1,196 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}用户管理{% endblock %}
+
+{% block page_title %}用户管理{% endblock %}
+
+{% block page_subtitle %}管理系统用户账号{% endblock %}
+
+{% block content %}
+<!-- 搜索筛选栏 -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-3">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="col-md-4">
+                <input type="text" name="keyword" class="form-control" placeholder="搜索用户名或姓名" value="{{ request.args.get('keyword', '') }}">
+            </div>
+            <div class="col-md-3">
+                <select name="role" class="form-select">
+                    <option value="">全部角色</option>
+                    <option value="admin" {% if request.args.get('role') == 'admin' %}selected{% endif %}>管理员</option>
+                    <option value="teacher" {% if request.args.get('role') == 'teacher' %}selected{% endif %}>教师</option>
+                    <option value="student" {% if request.args.get('role') == 'student' %}selected{% endif %}>学生</option>
+                </select>
+            </div>
+            <div class="col-md-5">
+                <button type="submit" class="btn btn-primary"><i class="fa fa-search"></i> 搜索</button>
+                <a href="{{ url_for('system.users_list') }}" class="btn btn-secondary"><i class="fa fa-refresh"></i> 重置</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 用户列表卡片 -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title"><i class="fa fa-user-circle" style="color: var(--primary-color);"></i> 用户列表</h5>
+        <div class="card-actions">
+            <button class="btn btn-danger" id="batchDeleteBtn" style="display: none;" onclick="batchDelete()">
+                <i class="fa fa-trash"></i> 批量删除 (<span id="selectedCount">0</span>)
+            </button>
+            <a href="{{ url_for('system.add_user') }}" class="btn btn-primary">
+                <i class="fa fa-plus"></i> 添加用户
+            </a>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-modern">
+                <thead>
+                    <tr>
+                        <th width="5%">
+                            <input type="checkbox" id="selectAll" onclick="toggleSelectAll()">
+                        </th>
+                        <th>用户名</th>
+                        <th>姓名</th>
+                        <th>角色</th>
+                        <th>邮箱</th>
+                        <th>手机号</th>
+                        <th>状态</th>
+                        <th>创建时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr>
+                        <td>
+                            <input type="checkbox" class="user-checkbox" value="{{ user.id }}" onclick="updateBatchDeleteBtn()">
+                        </td>
+                        <td><strong>{{ user.username }}</strong></td>
+                        <td>{{ user.name }}</td>
+                        <td>
+                            <span class="badge {% if user.role == 'admin' %}badge-admin{% elif user.role == 'teacher' %}badge-teacher{% else %}badge-student{% endif %}">
+                                {{ '管理员' if user.role == 'admin' else '教师' if user.role == 'teacher' else '学生' }}
+                            </span>
+                        </td>
+                        <td>{{ user.email or '-' }}</td>
+                        <td>{{ user.phone or '-' }}</td>
+                        <td>
+                            {% if user.is_active %}
+                            <span class="badge badge-success">正常</span>
+                            {% else %}
+                            <span class="badge badge-danger">禁用</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ user.created_at.strftime('%Y-%m-%d') if user.created_at else '-' }}</td>
+                        <td>
+                            <div class="action-btns">
+                                <a href="{{ url_for('system.edit_user', user_id=user.id) }}" class="btn btn-sm btn-primary">
+                                    <i class="fa fa-edit"></i> 编辑
+                                </a>
+                                <a href="{{ url_for('system.delete_user', user_id=user.id) }}" class="btn btn-sm btn-danger" onclick="return confirm('确定要删除这个用户吗？')">
+                                    <i class="fa fa-trash"></i> 删除
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 分页 -->
+        {% if pagination.pages > 1 %}
+        <div class="batch-actions">
+            <nav aria-label="Page navigation">
+                <ul class="pagination pagination-modern justify-content-end">
+                    {% if pagination.has_prev %}
+                        <li class="page-item"><a class="page-link" href="{{ url_for('system.users_list', page=pagination.prev_num) }}">&laquo;</a></li>
+                    {% else %}
+                        <li class="page-item disabled"><a class="page-link" href="#">&laquo;</a></li>
+                    {% endif %}
+
+                    {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+                        {% if page_num %}
+                            {% if pagination.page == page_num %}
+                                <li class="page-item active"><a class="page-link" href="#">{{ page_num }}</a></li>
+                            {% else %}
+                                <li class="page-item"><a class="page-link" href="{{ url_for('system.users_list', page=page_num) }}">{{ page_num }}</a></li>
+                            {% endif %}
+                        {% else %}
+                            <li class="page-item disabled"><a class="page-link" href="#">...</a></li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if pagination.has_next %}
+                        <li class="page-item"><a class="page-link" href="{{ url_for('system.users_list', page=pagination.next_num) }}">&raquo;</a></li>
+                    {% else %}
+                        <li class="page-item disabled"><a class="page-link" href="#">&raquo;</a></li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function toggleSelectAll() {
+    const selectAll = document.getElementById('selectAll');
+    const checkboxes = document.querySelectorAll('.user-checkbox');
+    checkboxes.forEach(cb => cb.checked = selectAll.checked);
+    updateBatchDeleteBtn();
+}
+
+function updateBatchDeleteBtn() {
+    const checkboxes = document.querySelectorAll('.user-checkbox');
+    const selectedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
+    const batchDeleteBtn = document.getElementById('batchDeleteBtn');
+    const selectedCountSpan = document.getElementById('selectedCount');
+
+    if (selectedCount > 0) {
+        batchDeleteBtn.style.display = 'inline-block';
+        selectedCountSpan.textContent = selectedCount;
+    } else {
+        batchDeleteBtn.style.display = 'none';
+    }
+}
+
+function batchDelete() {
+    const checkboxes = document.querySelectorAll('.user-checkbox');
+    const selectedIds = Array.from(checkboxes).filter(cb => cb.checked).map(cb => cb.value);
+
+    if (selectedIds.length === 0) {
+        alert('请选择要删除的用户');
+        return;
+    }
+
+    if (!confirm(确定要删除选中的  个用户吗？)) {
+        return;
+    }
+
+    fetch('/users/batch_delete', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify({ user_ids: selectedIds })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('删除失败：' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('删除失败：' + error);
+    });
+}
+</script>
+{% endblock %}

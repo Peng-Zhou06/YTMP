@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+
+{% block title %}添加AI辅助记录{% endblock %}
+
+{% block page_title %}添加AI辅助记录{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('project.ai_records_list') }}">AI辅助开发记录</a></li>
+                    <li class="breadcrumb-item active">添加记录</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <!-- 重要提示 -->
+    <div class="card mb-4 bg-info-subtle">
+        <div class="card-body">
+            <h5 class="card-title"><i class="fa fa-info-circle"></i> 记录要求</h5>
+            <ul>
+                <li>AI可以辅助开发，但不能替代理解、调试、测试和文档说明</li>
+                <li>每次使用AI解决重要问题时，请认真记录相关信息</li>
+                <li>记录内容将作为课程学习评估的参考依据</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- 表单 -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title">记录AI辅助使用情况</h5>
+        </div>
+        <div class="card-body">
+            <form method="POST">
+                {{ form.csrf_token }}
+                
+                <div class="row g-4">
+                    <!-- AI工具 -->
+                    <div class="col-md-6">
+                        <label class="form-label">1. AI工具名称 <span class="text-danger">*</span></label>
+                        <select name="ai_tool" class="form-select" required>
+                            <option value="">请选择</option>
+                            <option value="tongyi">通义灵码</option>
+                            <option value="doubao">豆包</option>
+                            <option value="ChatGPT">ChatGPT</option>
+                            <option value="Copilot">GitHub Copilot</option>
+                            <option value="Claude">Claude</option>
+                            <option value="Gemini">Gemini</option>
+                            <option value="Other">其他</option>
+                        </select>
+                    </div>
+                    
+                    <!-- 使用场景 -->
+                    <div class="col-md-6">
+                        <label class="form-label">2. 使用场景 <span class="text-danger">*</span></label>
+                        <select name="usage_scene" class="form-select" required>
+                            <option value="">请选择</option>
+                            <option value="生成数据库表结构">生成数据库表结构</option>
+                            <option value="生成 Flask 路由">生成 Flask 路由</option>
+                            <option value="解释报错">解释报错</option>
+                            <option value="优化页面样式">优化页面样式</option>
+                            <option value="生成测试用例">生成测试用例</option>
+                            <option value="编写 Dockerfile">编写 Dockerfile</option>
+                            <option value="编写 docker-compose.yml">编写 docker-compose.yml</option>
+                            <option value="生成部署文档">生成部署文档</option>
+                            <option value="分析日志">分析日志</option>
+                            <option value="生成项目总结">生成项目总结</option>
+                            <option value="其他">其他</option>
+                        </select>
+                    </div>
+                    
+                    <!-- 输入提示词 -->
+                    <div class="col-md-12">
+                        <label class="form-label">3. 输入提示词 <span class="text-danger">*</span></label>
+                        <textarea name="prompt" class="form-control" rows="4" required placeholder="请输入您向AI提出的问题或指令"></textarea>
+                    </div>
+                    
+                    <!-- AI返回结果摘要 -->
+                    <div class="col-md-12">
+                        <label class="form-label">4. AI返回结果摘要 <span class="text-danger">*</span></label>
+                        <textarea name="response_summary" class="form-control" rows="4" required placeholder="请简要描述AI给出的解决方案或回答"></textarea>
+                    </div>
+                    
+                    <!-- 生成的代码片段 -->
+                    <div class="col-md-12">
+                        <label class="form-label">生成的代码片段（可选）</label>
+                        <textarea name="code_snippet" class="form-control" rows="6" placeholder="如果AI生成了代码，请粘贴在此处"></textarea>
+                    </div>
+                    
+                    <!-- 是否直接采用 -->
+                    <div class="col-md-4">
+                        <label class="form-label">5. 是否直接采用？</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="applied" id="applied_yes" value="true" checked>
+                            <label class="form-check-label" for="applied_yes">是</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="applied" id="applied_no" value="false">
+                            <label class="form-check-label" for="applied_no">否</label>
+                        </div>
+                    </div>
+                    
+                    <!-- 是否进行了修改 -->
+                    <div class="col-md-4">
+                        <label class="form-label">6. 是否进行了修改？</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="modified" id="modified_yes" value="true">
+                            <label class="form-check-label" for="modified_yes">是</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="modified" id="modified_no" value="false" checked>
+                            <label class="form-check-label" for="modified_no">否</label>
+                        </div>
+                    </div>
+                    
+                    <!-- 最终解决效果 -->
+                    <div class="col-md-4">
+                        <label class="form-label">7. 最终解决效果 <span class="text-danger">*</span></label>
+                        <select name="effectiveness" class="form-select" required>
+                            <option value="">请选择</option>
+                            <option value="excellent">优秀</option>
+                            <option value="good">良好</option>
+                            <option value="fair">一般</option>
+                            <option value="poor">较差</option>
+                        </select>
+                    </div>
+                    
+                    <!-- 相关代码文件 -->
+                    <div class="col-md-6">
+                        <label class="form-label">8. 相关代码文件</label>
+                        <input type="text" name="related_files" class="form-control" placeholder="如：app/views/project.py, app/models/__init__.py">
+                    </div>
+                    
+                    <!-- 节省时间 -->
+                    <div class="col-md-6">
+                        <label class="form-label">节省时间（小时）</label>
+                        <input type="number" name="time_saved" class="form-control" placeholder="估算使用AI节省的时间" min="0" step="0.5">
+                    </div>
+                    
+                    <!-- 风险说明 -->
+                    <div class="col-md-12">
+                        <label class="form-label">9. 风险说明</label>
+                        <textarea name="risk_note" class="form-control" rows="3" placeholder="请说明使用AI可能带来的风险或需要注意的事项"></textarea>
+                    </div>
+                    
+                    <!-- 备注 -->
+                    <div class="col-md-12">
+                        <label class="form-label">备注</label>
+                        <textarea name="notes" class="form-control" rows="2" placeholder="其他需要说明的内容"></textarea>
+                    </div>
+                    
+                    <!-- 小组和学生选择 -->
+                    {% if current_user.role == 'student' %}
+                    <input type="hidden" name="team_id" value="{{ current_user.current_team.id if current_user.current_team else '' }}">
+                    <input type="hidden" name="student_id" value="{{ current_user.id }}">
+                    {% else %}
+                    <div class="col-md-6">
+                        <label class="form-label">小组 <span class="text-danger">*</span></label>
+                        <select name="team_id" class="form-select" required>
+                            <option value="">请选择小组</option>
+                            {% for team in teams %}
+                            <option value="{{ team.id }}">{{ team.team_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">学生 <span class="text-danger">*</span></label>
+                        <select name="student_id" class="form-select" required>
+                            <option value="">请选择学生</option>
+                            {% for student in students %}
+                            <option value="{{ student.id }}">{{ student.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    {% endif %}
+                    <input type="hidden" name="usage_type" value="code_generation">
+                </div>
+                
+                <!-- 提交按钮 -->
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fa fa-save"></i> 保存记录
+                    </button>
+                    <a href="{{ url_for('project.ai_records_list') }}" class="btn btn-secondary ml-2">
+                        <i class="fa fa-arrow-left"></i> 返回列表
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

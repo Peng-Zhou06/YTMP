@@ -1,0 +1,190 @@
+{% extends 'base.html' %}
+
+{% block title %}编辑学生 - 学生成绩管理系统{% endblock %}
+
+{% block page_title %}编辑学生信息{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title">编辑学生信息</h5>
+        <a href="{{ url_for('student.students_list') }}" class="btn btn-sm btn-primary float-end">
+            <i class="fa fa-arrow-left"></i> 返回列表
+        </a>
+    </div>
+    <div class="card-body">
+        {% if form.errors %}
+            <div class="alert alert-danger">
+                <strong>表单验证失败：</strong>
+                <ul class="mb-0">
+                    {% for field, errors in form.errors.items() %}
+                        {% for error in errors %}
+                            <li>{{ form[field].label }}: {{ error }}</li>
+                        {% endfor %}
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+        
+        <form method="POST" action="{{ url_for('student.edit_student', student_id=student.id) }}" class="form-validate">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            {{ form.hidden_tag() }}
+            
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <div class="form-group">
+                        {{ form.student_id.label(class="form-label") }}
+                        {{ form.student_id(class="form-control", placeholder="请输入学号") }}
+                        {% if form.student_id.errors %}
+                            <div class="invalid-feedback d-block">{{ form.student_id.errors[0] }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="form-group">
+                        {{ form.name.label(class="form-label") }}
+                        {{ form.name(class="form-control", placeholder="请输入姓名") }}
+                        {% if form.name.errors %}
+                            <div class="invalid-feedback d-block">{{ form.name.errors[0] }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="form-group">
+                        {{ form.gender.label(class="form-label") }}
+                        {{ form.gender(class="form-control") }}
+                        {% if form.gender.errors %}
+                            <div class="invalid-feedback d-block">{{ form.gender.errors[0] }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="form-group">
+                        {{ form.grade.label(class="form-label") }}
+                        {{ form.grade(class="form-control") }}
+                        {% if form.grade.errors %}
+                            <div class="invalid-feedback d-block">{{ form.grade.errors[0] }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="form-group">
+                        {{ form.department.label(class="form-label") }}
+                        {{ form.department(class="form-control", id="departmentSelect") }}
+                        {% if form.department.errors %}
+                            <div class="invalid-feedback d-block">{{ form.department.errors[0] }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="form-group">
+                        {{ form.major.label(class="form-label") }}
+                        {{ form.major(class="form-control", id="majorSelect") }}
+                        {% if form.major.errors %}
+                            <div class="invalid-feedback d-block">{{ form.major.errors[0] }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="form-group">
+                        {{ form.class_name.label(class="form-label") }}
+                        {{ form.class_name(class="form-control", placeholder="请输入班级，如：2401") }}
+                        {% if form.class_name.errors %}
+                            <div class="invalid-feedback d-block">{{ form.class_name.errors[0] }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="form-group">
+                        {{ form.birthday.label(class="form-label") }}
+                        {{ form.birthday(class="form-control", type="date") }}
+                        {% if form.birthday.errors %}
+                            <div class="invalid-feedback d-block">{{ form.birthday.errors[0] }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="form-group">
+                        {{ form.email.label(class="form-label") }}
+                        {{ form.email(class="form-control", placeholder="请输入邮箱") }}
+                        {% if form.email.errors %}
+                            <div class="invalid-feedback d-block">{{ form.email.errors[0] }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="form-group">
+                        {{ form.phone.label(class="form-label") }}
+                        {{ form.phone(class="form-control", placeholder="请输入联系电话") }}
+                        {% if form.phone.errors %}
+                            <div class="invalid-feedback d-block">{{ form.phone.errors[0] }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="form-group">
+                        {{ form.address.label(class="form-label") }}
+                        {{ form.address(class="form-control", placeholder="请输入家庭地址") }}
+                        {% if form.address.errors %}
+                            <div class="invalid-feedback d-block">{{ form.address.errors[0] }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-4">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fa fa-save"></i> 保存修改
+                </button>
+                <a href="{{ url_for('student.students_list') }}" class="btn btn-secondary">
+                    <i class="fa fa-times"></i> 取消
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+const departmentMajors = {{ departments_json | safe }};
+const currentMajor = '{{ student.major }}';
+
+function populateMajors(dept, selectedMajor) {
+    const majorSelect = document.getElementById('majorSelect');
+    majorSelect.innerHTML = '<option value="">请选择专业</option>';
+    
+    if (dept && departmentMajors[dept]) {
+        departmentMajors[dept].forEach(function(major) {
+            const option = document.createElement('option');
+            option.value = major;
+            option.textContent = major;
+            if (major === selectedMajor) {
+                option.selected = true;
+            }
+            majorSelect.appendChild(option);
+        });
+    }
+}
+
+document.getElementById('departmentSelect').addEventListener('change', function() {
+    populateMajors(this.value, '');
+});
+
+// 页面加载时初始化专业选项
+window.addEventListener('DOMContentLoaded', function() {
+    const currentDept = document.getElementById('departmentSelect').value;
+    if (currentDept) {
+        populateMajors(currentDept, currentMajor);
+    }
+});
+</script>
+{% endblock %}

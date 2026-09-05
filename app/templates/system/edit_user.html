@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <div class="container-fluid">
+        <!-- 页面标题 -->
+        <div class="row mb-4">
+            <div class="col-lg-12">
+                <h1 class="h3 mb-0 text-gray-800">{{ title }}</h1>
+            </div>
+        </div>
+
+        <!-- 编辑用户表单 -->
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">用户信息</h6>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('system.edit_user', user_id=user.id) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            {{ form.username.label(class="form-control-label") }}
+                            {% if form.username.errors %}
+                                {{ form.username(class="form-control form-control-lg is-invalid") }}
+                                <div class="invalid-feedback">
+                                    {% for error in form.username.errors %}
+                                        <span>{{ error }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                {{ form.username(class="form-control form-control-lg") }}
+                            {% endif %}
+                        </div>
+                        
+                        <div class="form-group col-md-6">
+                            {{ form.password.label(class="form-control-label") }}
+                            <small class="form-text text-muted ml-2">留空则不修改密码</small>
+                            {% if form.password.errors %}
+                                {{ form.password(class="form-control form-control-lg is-invalid") }}
+                                <div class="invalid-feedback">
+                                    {% for error in form.password.errors %}
+                                        <span>{{ error }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                {{ form.password(class="form-control form-control-lg") }}
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            {{ form.role.label(class="form-control-label") }}
+                            {% if form.role.errors %}
+                                {{ form.role(class="form-control form-control-lg is-invalid") }}
+                                <div class="invalid-feedback">
+                                    {% for error in form.role.errors %}
+                                        <span>{{ error }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                {{ form.role(class="form-control form-control-lg") }}
+                            {% endif %}
+                        </div>
+                        
+                        <div class="form-group col-md-6">
+                            {{ form.name.label(class="form-control-label") }}
+                            {% if form.name.errors %}
+                                {{ form.name(class="form-control form-control-lg is-invalid") }}
+                                <div class="invalid-feedback">
+                                    {% for error in form.name.errors %}
+                                        <span>{{ error }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                {{ form.name(class="form-control form-control-lg") }}
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            {{ form.email.label(class="form-control-label") }}
+                            {% if form.email.errors %}
+                                {{ form.email(class="form-control form-control-lg is-invalid") }}
+                                <div class="invalid-feedback">
+                                    {% for error in form.email.errors %}
+                                        <span>{{ error }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                {{ form.email(class="form-control form-control-lg") }}
+                            {% endif %}
+                        </div>
+                        
+                        <div class="form-group col-md-6">
+                            {{ form.phone.label(class="form-control-label") }}
+                            {% if form.phone.errors %}
+                                {{ form.phone(class="form-control form-control-lg is-invalid") }}
+                                <div class="invalid-feedback">
+                                    {% for error in form.phone.errors %}
+                                        <span>{{ error }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                {{ form.phone(class="form-control form-control-lg") }}
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-primary btn-lg">保存</button>
+                        <a href="{{ url_for('system.users_list') }}" class="btn btn-secondary btn-lg">取消</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+{% endblock %}

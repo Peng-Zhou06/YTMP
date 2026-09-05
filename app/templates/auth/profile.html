@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}个人资料{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0"><i class="bi bi-person-circle"></i> 个人资料</h4>
+                    <a href="javascript:history.back()" class="btn btn-sm btn-outline-secondary">
+                        <i class="fa fa-arrow-left"></i> 返回
+                    </a>
+                </div>
+                <div class="card-body">
+                    <!-- 显示消息 -->
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+                    <!-- 头像显示和上传 -->
+                    <div class="text-center mb-4">
+                        <div class="avatar-container mb-3">
+                            {% if user.avatar %}
+                                <img src="{{ url_for('static', filename=user.avatar) }}" 
+                                     alt="头像" 
+                                     class="rounded-circle" 
+                                     style="width: 150px; height: 150px; object-fit: cover;">
+                            {% else %}
+                                <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center" 
+                                     style="width: 150px; height: 150px; margin: 0 auto;">
+                                    <i class="bi bi-person text-white" style="font-size: 80px;"></i>
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <form method="POST" enctype="multipart/form-data" action="{{ url_for('auth.profile') }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <div class="mb-3">
+                                <label for="avatar" class="form-label">上传新头像</label>
+                                <input type="file" class="form-control" id="avatar" name="avatar" accept="image/*">
+                                <small class="text-muted">支持 PNG、JPG、JPEG、GIF 格式</small>
+                            </div>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-upload"></i> 上传头像
+                            </button>
+                        </form>
+                    </div>
+
+                    <hr>
+
+                    <!-- 个人信息编辑 -->
+                    <h5 class="mb-3">基本信息</h5>
+                    <form method="POST" action="{{ url_for('auth.profile') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <div class="mb-3">
+                            <label for="username" class="form-label">用户名</label>
+                            <input type="text" class="form-control" id="username" value="{{ user.username }}" disabled>
+                            <small class="text-muted">用户名不可修改</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="name" class="form-label">姓名</label>
+                            <input type="text" class="form-control" id="name" name="name" value="{{ user.name }}" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="email" class="form-label">邮箱</label>
+                            <input type="email" class="form-control" id="email" name="email" value="{{ user.email }}" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="phone" class="form-label">电话</label>
+                            <input type="tel" class="form-control" id="phone" name="phone" value="{{ user.phone or '' }}">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">角色</label>
+                            <input type="text" class="form-control" value="{% if user.role == 'admin' %}管理员{% elif user.role == 'teacher' %}教师{% elif user.role == 'student' %}学生{% else %}{{ user.role }}{% endif %}" disabled>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">注册时间</label>
+                            <input type="text" class="form-control" value="{{ user.created_at.strftime('%Y-%m-%d %H:%M:%S') }}" disabled>
+                        </div>
+
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-save"></i> 保存修改
+                        </button>
+                    </form>
+
+                    <hr>
+
+                    <!-- 密码修改链接 -->
+                    <div class="mt-4">
+                        <a href="{{ url_for('auth.change_password') }}" class="btn btn-warning">
+                            <i class="bi bi-key"></i> 修改密码
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

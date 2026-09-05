@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+
+{% block title %}爬虫数据管理{% endblock %}
+
+{% block page_title %}爬虫数据管理{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h2><i class="fa fa-spider"></i> 爬虫数据管理</h2>
+        </div>
+    </div>
+
+    <!-- 统计卡片 -->
+    {% if stats %}
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6">
+            <div class="stat-card bg-primary">
+                <div class="stat-number">{{ stats.total_crawls }}</div>
+                <div class="stat-label">总爬取次数</div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="stat-card bg-success">
+                <div class="stat-number">{{ stats.success_count }}</div>
+                <div class="stat-label">成功次数</div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="stat-card bg-danger">
+                <div class="stat-number">{{ stats.failed_count }}</div>
+                <div class="stat-label">失败次数</div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="stat-card bg-info">
+                <div class="stat-number">{{ stats.total_records }}</div>
+                <div class="stat-label">总记录数</div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- 操作面板 -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title">爬取操作</h5>
+        </div>
+        <div class="card-body">
+            <form action="{{ url_for('project.simple_crawl') }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <input type="text" name="url" class="form-control" placeholder="输入要爬取的URL" required>
+                    </div>
+                    <div class="col-md-3">
+                        <select name="team_id" class="form-select" required>
+                            <option value="">选择小组</option>
+                            {% for team in teams %}
+                            <option value="{{ team.id }}">{{ team.team_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-5">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fa fa-download"></i> 开始爬取
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 爬取数据列表 -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title">爬取记录</h5>
+        </div>
+        <div class="card-body">
+            {% if pagination.items %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>标题</th>
+                            <th>来源URL</th>
+                            <th>类型</th>
+                            <th>状态</th>
+                            <th>记录数</th>
+                            <th>爬取时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in pagination.items %}
+                        <tr>
+                            <td>{{ item.data_title[:30] }}{% if item.data_title|length > 30 %}...{% endif %}</td>
+                            <td>{{ item.source_url[:40] }}{% if item.source_url|length > 40 %}...{% endif %}</td>
+                            <td><span class="badge bg-info">{{ item.source_type }}</span></td>
+                            <td>
+                                {% if item.status == 'success' %}
+                                <span class="badge bg-success">成功</span>
+                                {% else %}
+                                <span class="badge bg-danger">失败</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ item.record_count }}</td>
+                            <td>{{ item.crawled_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>
+                                <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#detailModal{{ item.id }}">
+                                    <i class="fa fa-eye"></i> 查看
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- 分页 -->
+            <div class="mt-4">
+                {{ pagination.links }}
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+                <i class="fa fa-info-circle"></i> 暂无爬取记录，输入URL开始爬取
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- 详情模态框 -->
+    {% for item in pagination.items %}
+    <div class="modal fade" id="detailModal{{ item.id }}" tabindex="-1" aria-labelledby="detailModalLabel{{ item.id }}" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="detailModalLabel{{ item.id }}">{{ item.data_title }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="fw-bold">来源URL：</label>
+                        <a href="{{ item.source_url }}" target="_blank">{{ item.source_url }}</a>
+                    </div>
+                    <div class="mb-3">
+                        <label class="fw-bold">数据类型：</label>
+                        <span>{{ item.source_type }}</span>
+                    </div>
+                    <div class="mb-3">
+                        <label class="fw-bold">状态：</label>
+                        {% if item.status == 'success' %}
+                        <span class="badge bg-success">成功</span>
+                        {% else %}
+                        <span class="badge bg-danger">失败</span>
+                        {% endif %}
+                    </div>
+                    {% if item.error_message %}
+                    <div class="mb-3">
+                        <label class="fw-bold">错误信息：</label>
+                        <pre class="bg-light p-2">{{ item.error_message }}</pre>
+                    </div>
+                    {% endif %}
+                    {% if item.data_content %}
+                    <div class="mb-3">
+                        <label class="fw-bold">数据内容：</label>
+                        <pre class="bg-light p-2" style="max-height: 400px; overflow-y: auto;">{{ item.data_content }}</pre>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

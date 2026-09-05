@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+
+{% block title %}成绩管理 - 学生成绩管理系统{% endblock %}
+
+{% block page_title %}成绩列表{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="card-title mb-0">成绩信息管理</h5>
+        <div>
+            <a href="javascript:history.back()" class="btn btn-sm btn-outline-secondary me-2">
+                <i class="fa fa-arrow-left"></i> 返回
+            </a>
+            {% if current_user.role in ['admin', 'teacher'] %}
+                <a href="{{ url_for('score.export_scores') }}" class="btn btn-sm btn-primary me-2">
+                    <i class="fa fa-download"></i> 导出
+                </a>
+                <a href="{{ url_for('score.add_score') }}" class="btn btn-sm btn-primary">
+                    <i class="fa fa-plus"></i> 录入成绩
+                </a>
+            {% endif %}
+        </div>
+    </div>
+    <div class="card-body">
+        <!-- 搜索框 -->
+        <div class="search-box">
+            <form method="GET" action="{{ url_for('score.scores_list') }}" class="search-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="row g-3">
+                    {% if current_user.role in ['admin', 'teacher'] %}
+                        <div class="col-md-2">
+                            <input type="text" name="student_id" class="form-control" placeholder="学生学号" value="{{ request.args.get('student_id', '') }}">
+                        </div>
+                        <div class="col-md-2">
+                            <input type="text" name="student_name" class="form-control" placeholder="学生姓名" value="{{ request.args.get('student_name', '') }}">
+                        </div>
+                    {% endif %}
+                    <div class="col-md-2">
+                        <select name="course_id" class="form-control">
+                            <option value="">课程名称</option>
+                            {% for course in courses %}
+                            <option value="{{ course.id }}" {% if request.args.get('course_id') == course.id|string %}selected{% endif %}>{{ course.course_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    {% if current_user.role == 'admin' %}
+                        <div class="col-md-2">
+                            <select name="teacher_id" class="form-control">
+                                <option value="">授课教师</option>
+                                {% for teacher in teachers %}
+                                <option value="{{ teacher.id }}" {% if request.args.get('teacher_id') == teacher.id|string %}selected{% endif %}>{{ teacher.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    {% endif %}
+                    <div class="col-md-2">
+                        <input type="text" name="semester" class="form-control" placeholder="学期" value="{{ request.args.get('semester', '') }}">
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fa fa-search"></i> 搜索
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+        
+        <!-- 成绩列表 -->
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>学生学号</th>
+                        <th>学生姓名</th>
+                        <th>课程名称</th>
+                        <th>授课教师</th>
+                        <th>学期</th>
+                        <th>成绩</th>
+                        <th>录入时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for score in scores %}                        <tr>
+                            <td>{{ score.student.student_id }}</td>
+                            <td>{{ score.student.name }}</td>
+                            <td>{{ score.course.course_name }}</td>
+                            <td>{{ score.course.teacher.name }}</td>
+                            <td>{{ score.course.semester }}</td>
+                            <td class="score-range">
+                                {% if score.score >= 90 %}
+                                    <span class="text-success">{{ score.score }}</span>
+                                {% elif score.score >= 60 %}
+                                    <span class="text-primary">{{ score.score }}</span>
+                                {% else %}
+                                    <span class="text-danger">{{ score.score }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ score.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                            <td>
+                                {% if current_user.role in ['admin', 'teacher'] %}
+                                    <a href="{{ url_for('score.edit_score', score_id=score.id) }}" class="btn btn-sm btn-primary me-1">
+                                        <i class="fa fa-edit"></i> 编辑
+                                    </a>
+                                    <a href="{{ url_for('score.delete_score', score_id=score.id) }}" class="btn btn-sm btn-danger btn-delete">
+                                        <i class="fa fa-trash"></i> 删除
+                                    </a>
+                                {% else %}
+                                    <!-- 学生只能查看成绩 -->
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- 分页 -->
+            <div class="row">
+                <div class="col-md-12">
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination justify-content-center">
+                            <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+                                <a class="page-link" href="{{ url_for('score.scores_list', page=pagination.prev_num) if pagination.has_prev else '#' }}" aria-label="Previous">
+                                    <span aria-hidden="true">&laquo;</span>
+                                </a>
+                            </li>
+                            {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+                                {% if page_num %}
+                                    <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
+                                        <a class="page-link" href="{{ url_for('score.scores_list', page=page_num) }}">{{ page_num }}</a>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                                {% endif %}
+                            {% endfor %}
+                            <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+                                <a class="page-link" href="{{ url_for('score.scores_list', page=pagination.next_num) if pagination.has_next else '#' }}" aria-label="Next">
+                                    <span aria-hidden="true">&raquo;</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

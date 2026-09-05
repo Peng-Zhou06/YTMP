@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}爬虫配置管理{% endblock %}
+
+{% block page_title %}爬虫配置管理{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('project.job_postings_list') }}">招聘岗位采集</a></li>
+                    <li class="breadcrumb-item active">爬虫配置</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <!-- 添加配置表单 -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title">添加采集关键词</h5>
+        </div>
+        <div class="card-body">
+            <form action="{{ url_for('project.add_crawler_config') }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <input type="text" name="keyword" class="form-control" placeholder="采集关键词" required>
+                    </div>
+                    <div class="col-md-2">
+                        <select name="source_type" class="form-select">
+                            <option value="lagou">拉勾网</option>
+                            <option value="boss">BOSS直聘</option>
+                            <option value="zhipin">智联招聘</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <input type="number" name="max_pages" class="form-control" placeholder="最大页数" value="10" min="1" max="50">
+                    </div>
+                    <div class="col-md-2">
+                        <input type="number" name="interval" class="form-control" placeholder="请求间隔(秒)" value="3" min="1" max="30">
+                    </div>
+                    <div class="col-md-3">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fa fa-plus"></i> 添加配置
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 配置列表 -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title">采集关键词列表</h5>
+        </div>
+        <div class="card-body">
+            {% if configs %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>关键词</th>
+                            <th>来源网站</th>
+                            <th>最大页数</th>
+                            <th>请求间隔</th>
+                            <th>创建时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for config in configs %}
+                        <tr>
+                            <td>{{ config.keyword }}</td>
+                            <td>
+                                {% if config.source_type == 'lagou' %}拉勾网{% endif %}
+                                {% if config.source_type == 'boss' %}BOSS直聘{% endif %}
+                                {% if config.source_type == 'zhipin' %}智联招聘{% endif %}
+                            </td>
+                            <td>{{ config.max_pages }}</td>
+                            <td>{{ config.interval }}秒</td>
+                            <td>{{ config.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>
+                                <form action="{{ url_for('project.delete_crawler_config', config_id=config.id) }}" method="POST" onsubmit="return confirm('确定要删除此配置吗？');">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-sm btn-danger">
+                                        <i class="fa fa-trash"></i> 删除
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+                <i class="fa fa-info-circle"></i> 暂无配置，添加关键词开始采集
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

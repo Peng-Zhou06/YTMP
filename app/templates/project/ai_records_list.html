@@ -1,0 +1,254 @@
+{% extends "base.html" %}
+
+{% block title %}AI辅助开发记录{% endblock %}
+
+{% block page_title %}AI辅助开发记录{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2><i class="fa fa-robot"></i> AI辅助开发记录</h2>
+                <a href="{{ url_for('project.add_ai_record') }}" class="btn btn-primary">
+                    <i class="fa fa-plus"></i> 添加记录
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- 统计卡片 -->
+    {% if stats %}
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6">
+            <div class="stat-card bg-primary">
+                <div class="stat-number">{{ stats.total_records }}</div>
+                <div class="stat-label">记录总数</div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="stat-card bg-success">
+                <div class="stat-number">{{ stats.applied_count }}</div>
+                <div class="stat-label">已应用记录</div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="stat-card bg-info">
+                <div class="stat-number">{{ "%.1f"|format(stats.total_time_saved) }}</div>
+                <div class="stat-label">节省时间(小时)</div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="stat-card bg-warning">
+                <div class="stat-number">{{ stats.tool_stats|length }}</div>
+                <div class="stat-label">使用工具数</div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- 筛选栏 -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="col-md-3">
+                    <select name="team_id" class="form-select">
+                        <option value="">全部小组</option>
+                        {% for team in current_user.teams %}
+                        <option value="{{ team.id }}" {% if request.args.get('team_id')|int == team.id %}selected{% endif %}>{{ team.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fa fa-search"></i> 筛选
+                    </button>
+                    <a href="{{ url_for('project.ai_records_list') }}" class="btn btn-secondary ml-2">
+                        <i class="fa fa-refresh"></i> 重置
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- AI使用提示 -->
+    <div class="card mb-4 bg-info-subtle">
+        <div class="card-body">
+            <h5 class="card-title"><i class="fa fa-info-circle"></i> 重要提示</h5>
+            <p class="card-text">AI可以辅助开发，但不能替代理解、调试、测试和文档说明。请合理使用AI工具，并认真记录每次使用过程。</p>
+        </div>
+    </div>
+
+    <!-- 记录列表 -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title">记录列表</h5>
+        </div>
+        <div class="card-body">
+            {% if pagination.items %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>工具</th>
+                            <th>使用场景</th>
+                            <th>学生</th>
+                            <th>是否采用</th>
+                            <th>是否修改</th>
+                            <th>效果</th>
+                            <th>记录时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for record in pagination.items %}
+                        <tr>
+                            <td>
+                                {% if record.ai_tool == 'tongyi' %}通义灵码
+                                {% elif record.ai_tool == 'doubao' %}豆包
+                                {% else %}{{ record.ai_tool }}{% endif %}
+                            </td>
+                            <td>{{ record.usage_scene or record.usage_type }}</td>
+                            <td>{{ record.student.name if record.student else '-' }}</td>
+                            <td>
+                                {% if record.applied %}
+                                <span class="badge bg-success">是</span>
+                                {% else %}
+                                <span class="badge bg-secondary">否</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if record.modified %}
+                                <span class="badge bg-info">是</span>
+                                {% else %}
+                                <span class="badge bg-secondary">否</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if record.effectiveness == 'excellent' %}<span class="badge bg-success">优秀</span>
+                                {% elif record.effectiveness == 'good' %}<span class="badge bg-info">良好</span>
+                                {% elif record.effectiveness == 'fair' %}<span class="badge bg-warning">一般</span>
+                                {% elif record.effectiveness == 'poor' %}<span class="badge bg-danger">较差</span>
+                                {% else %}-{% endif %}
+                            </td>
+                            <td>{{ record.recorded_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>
+                                <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#detailModal{{ record.id }}">
+                                    <i class="fa fa-eye"></i> 查看
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- 分页 -->
+            <div class="mt-4">
+                {{ pagination.links }}
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+                <i class="fa fa-info-circle"></i> 暂无AI辅助记录
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- 详情模态框 -->
+    {% for record in pagination.items %}
+    <div class="modal fade" id="detailModal{{ record.id }}" tabindex="-1" aria-labelledby="detailModalLabel{{ record.id }}" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="detailModalLabel{{ record.id }}">AI辅助记录详情</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="mb-2">
+                                <label class="fw-bold">AI工具：</label>
+                                {% if record.ai_tool == 'tongyi' %}通义灵码
+                                {% elif record.ai_tool == 'doubao' %}豆包
+                                {% else %}{{ record.ai_tool }}{% endif %}
+                            </div>
+                            <div class="mb-2">
+                                <label class="fw-bold">使用场景：</label>
+                                {{ record.usage_scene or '-' }}
+                            </div>
+                            <div class="mb-2">
+                                <label class="fw-bold">学生：</label>
+                                {{ record.student.name if record.student else '-' }}
+                            </div>
+                            <div class="mb-2">
+                                <label class="fw-bold">是否直接采用：</label>
+                                {% if record.applied %}<span class="badge bg-success">是</span>{% else %}<span class="badge bg-secondary">否</span>{% endif %}
+                            </div>
+                            <div class="mb-2">
+                                <label class="fw-bold">是否进行了修改：</label>
+                                {% if record.modified %}<span class="badge bg-info">是</span>{% else %}<span class="badge bg-secondary">否</span>{% endif %}
+                            </div>
+                            <div class="mb-2">
+                                <label class="fw-bold">最终解决效果：</label>
+                                {% if record.effectiveness == 'excellent' %}<span class="badge bg-success">优秀</span>
+                                {% elif record.effectiveness == 'good' %}<span class="badge bg-info">良好</span>
+                                {% elif record.effectiveness == 'fair' %}<span class="badge bg-warning">一般</span>
+                                {% elif record.effectiveness == 'poor' %}<span class="badge bg-danger">较差</span>
+                                {% else %}-{% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-2">
+                                <label class="fw-bold">相关代码文件：</label>
+                                {{ record.related_files or '-' }}
+                            </div>
+                            <div class="mb-2">
+                                <label class="fw-bold">节省时间：</label>
+                                {{ record.time_saved }} 小时
+                            </div>
+                            <div class="mb-2">
+                                <label class="fw-bold">记录时间：</label>
+                                {{ record.recorded_at.strftime('%Y-%m-%d %H:%M') }}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="fw-bold">输入提示词：</label>
+                        <pre class="bg-light p-3">{{ record.prompt or '-' }}</pre>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="fw-bold">AI返回结果摘要：</label>
+                        <pre class="bg-light p-3">{{ record.response_summary or '-' }}</pre>
+                    </div>
+                    
+                    {% if record.code_snippet %}
+                    <div class="mb-4">
+                        <label class="fw-bold">生成的代码片段：</label>
+                        <pre class="bg-dark text-light p-3">{{ record.code_snippet }}</pre>
+                    </div>
+                    {% endif %}
+                    
+                    {% if record.risk_note %}
+                    <div class="mb-4">
+                        <label class="fw-bold">风险说明：</label>
+                        <p class="bg-warning-subtle p-3">{{ record.risk_note }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    {% if record.notes %}
+                    <div>
+                        <label class="fw-bold">备注：</label>
+                        <p>{{ record.notes }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

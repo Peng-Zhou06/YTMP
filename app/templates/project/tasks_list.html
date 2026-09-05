@@ -1,0 +1,882 @@
+{% extends "base.html" %}
+
+{% block title %}任务看板 - {{ team.team_name if team else '全部任务' }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- 页面头部 -->
+    <div class="page-header mb-4">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <nav aria-label="breadcrumb" class="mb-2">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="{{ url_for('project.projects_list') }}">项目</a></li>
+                        {% if team %}
+                        <li class="breadcrumb-item"><a href="{{ url_for('project.teams_list', project_id=team.project_id) }}">小组</a></li>
+                        <li class="breadcrumb-item active">{{ team.team_name }}</li>
+                        {% endif %}
+                        <li class="breadcrumb-item active">任务看板</li>
+                    </ol>
+                </nav>
+                <h2 class="mb-0">
+                    <i class="fas fa-tasks text-primary"></i> 
+                    任务看板
+                    {% if team %}<span class="text-muted">- {{ team.team_name }}</span>{% endif %}
+                </h2>
+            </div>
+            <div class="col-md-6 text-end">
+                {% if current_user.role in ['admin', 'teacher'] %}
+                <a href="{{ url_for('project.tasks_overview') }}" class="btn btn-outline-info me-2">
+                    <i class="fas fa-chart-line"></i> 任务总览
+                </a>
+                {% endif %}
+                <a href="{{ url_for('project.add_task') }}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> 新建任务
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- 筛选器 -->
+    {% if team %}
+    <div class="card mb-4 filter-card">
+        <div class="card-body">
+            <form method="GET" class="row g-3 align-items-end">
+                <input type="hidden" name="team_id" value="{{ team.id }}">
+                
+                <div class="col-md-3">
+                    <label class="form-label"><i class="fas fa-filter text-muted"></i> 状态筛选</label>
+                    <select name="status" class="form-select" onchange="this.form.submit()">
+                        <option value="">全部状态</option>
+                        <option value="todo" {% if request.args.get('status') == 'todo' %}selected{% endif %}>待开始</option>
+                        <option value="in_progress" {% if request.args.get('status') == 'in_progress' %}selected{% endif %}>进行中</option>
+                        <option value="review" {% if request.args.get('status') == 'review' %}selected{% endif %}>待测试</option>
+                        <option value="done" {% if request.args.get('status') == 'done' %}selected{% endif %}>已完成</option>
+                    </select>
+                </div>
+                
+                <div class="col-md-3">
+                    <label class="form-label"><i class="fas fa-flag text-muted"></i> 优先级筛选</label>
+                    <select name="priority" class="form-select" onchange="this.form.submit()">
+                        <option value="">全部优先级</option>
+                        <option value="high" {% if request.args.get('priority') == 'high' %}selected{% endif %}>高</option>
+                        <option value="medium" {% if request.args.get('priority') == 'medium' %}selected{% endif %}>中</option>
+                        <option value="low" {% if request.args.get('priority') == 'low' %}selected{% endif %}>低</option>
+                    </select>
+                </div>
+                
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-search"></i> 应用筛选
+                    </button>
+                </div>
+                <div class="col-md-3">
+                    <a href="{{ url_for('project.tasks_list', team_id=team.id) }}" class="btn btn-outline-secondary w-100">
+                        <i class="fas fa-times"></i> 清除筛选
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- 统计卡片 -->
+    {% if team %}
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="stat-card stat-card-secondary">
+                <div class="stat-icon"><i class="fas fa-clock"></i></div>
+                <div class="stat-content">
+                    <div class="stat-number">{{ task_stats.todo }}</div>
+                    <div class="stat-label">待开始</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card stat-card-primary">
+                <div class="stat-icon"><i class="fas fa-spinner"></i></div>
+                <div class="stat-content">
+                    <div class="stat-number">{{ task_stats.in_progress }}</div>
+                    <div class="stat-label">进行中</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card stat-card-warning">
+                <div class="stat-icon"><i class="fas fa-eye"></i></div>
+                <div class="stat-content">
+                    <div class="stat-number">{{ task_stats.review }}</div>
+                    <div class="stat-label">待测试</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card stat-card-success">
+                <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+                <div class="stat-content">
+                    <div class="stat-number">{{ task_stats.done }}</div>
+                    <div class="stat-label">已完成</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 可视化图表 -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card chart-card">
+                <div class="card-header">
+                    <h5 class="card-title"><i class="fas fa-chart-pie text-primary"></i> 任务状态分布</h5>
+                </div>
+                <div class="card-body">
+                    <div id="taskStatusChart" style="height: 300px;"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card chart-card">
+                <div class="card-header">
+                    <h5 class="card-title"><i class="fas fa-chart-bar text-success"></i> 任务进度分布</h5>
+                </div>
+                <div class="card-body">
+                    <div id="taskProgressChart" style="height: 300px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- 未选择小组提示 -->
+    {% if not team %}
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card welcome-card">
+                <div class="card-header bg-gradient-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-info-circle"></i> 请选择一个小组查看任务看板</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-4">任务看板是按小组组织的，请先选择一个小组来查看该小组的任务。</p>
+                    
+                    {% if projects %}
+                    <h6 class="mb-3"><i class="fas fa-users text-primary"></i> 可用的小组列表</h6>
+                    <div class="row">
+                        {% for project in projects %}
+                            {% set teams_in_project = project.teams %}
+                            {% if teams_in_project %}
+                            <div class="col-md-4 mb-3">
+                                <div class="card team-card h-100">
+                                    <div class="card-header bg-light">
+                                        <strong><i class="fas fa-project-diagram text-primary"></i> {{ project.name }}</strong>
+                                    </div>
+                                    <div class="card-body">
+                                        <ul class="list-unstyled mb-0">
+                                            {% for t in teams_in_project %}
+                                            <li class="mb-2">
+                                                <a href="{{ url_for('project.tasks_list', team_id=t.id) }}" class="btn btn-outline-primary w-100 text-start team-btn">
+                                                    <i class="fas fa-users"></i> {{ t.team_name }}
+                                                    <span class="badge bg-primary float-end">{{ t.tasks|length }}个任务</span>
+                                                </a>
+                                            </li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i> 当前没有可用的项目或小组。
+                        {% if current_user.role in ['admin', 'teacher'] %}
+                        <a href="{{ url_for('project.add_project') }}" class="btn btn-sm btn-primary mt-2">创建项目</a>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    
+    <!-- 定义任务卡片宏 -->
+    {% macro render_task_card(task) %}
+    <div class="task-card" draggable="true" data-task-id="{{ task.id }}" data-status="{{ task.status }}">
+        <div class="task-card-header">
+            <h6 class="task-title">
+                <a href="{{ url_for('project.task_detail', task_id=task.id) }}">{{ task.title }}</a>
+            </h6>
+            <div class="task-actions">
+                <span class="priority-badge priority-{{ task.priority }}">
+                    {{ {'urgent': '紧急', 'high': '高', 'medium': '中', 'low': '低'}[task.priority] }}
+                </span>
+                {% if current_user.role in ['admin', 'teacher'] %}
+                <form action="{{ url_for('project.delete_task', task_id=task.id) }}" method="POST" class="delete-form" onsubmit="return confirm('确定要删除这个任务吗？');">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-sm btn-danger delete-btn" title="删除任务">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+        
+        {% if task.description %}
+        <p class="task-description">{{ task.description[:80] }}{% if task.description|length > 80 %}...{% endif %}</p>
+        {% endif %}
+        
+        <div class="task-meta">
+            {% if task.assignee %}
+            <div class="assignee">
+                <i class="fas fa-user-circle"></i>
+                <span>{{ task.assignee.name }}</span>
+            </div>
+            {% endif %}
+            
+            <div class="progress-bar-container">
+                <div class="progress">
+                    <div class="progress-bar" role="progressbar" 
+                         style="width: {{ task.progress or 0 }}%;" 
+                         aria-valuenow="{{ task.progress or 0 }}" 
+                         aria-valuemin="0" 
+                         aria-valuemax="100">
+                    </div>
+                </div>
+                <small class="progress-text">{{ task.progress or 0 }}%</small>
+            </div>
+            
+            {% if task.due_date %}
+            <div class="due-date {% if task.due_date < now() and task.status != 'done' %}overdue{% endif %}">
+                <i class="fas fa-calendar-alt"></i>
+                <span>{{ task.due_date.strftime('%m-%d') }}</span>
+            </div>
+            {% endif %}
+            
+            {% if task.tags %}
+            <div class="tags">
+                {% for tag in task.tags.split(',') %}
+                <span class="tag">{{ tag.strip() }}</span>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endmacro %}
+    
+    <!-- 看板视图 -->
+    <div class="row kanban-row">
+        <!-- 待开始 -->
+        <div class="col-md-3">
+            <div class="kanban-column" data-status="todo">
+                <div class="kanban-header kanban-header-secondary">
+                    <div class="kanban-title">
+                        <i class="fas fa-clock"></i>
+                        <span>待开始</span>
+                        <span class="badge">{{ tasks_by_status.todo|length }}</span>
+                    </div>
+                </div>
+                <div class="kanban-body">
+                    {% for task in tasks_by_status.todo %}
+                    {{ render_task_card(task) }}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- 进行中 -->
+        <div class="col-md-3">
+            <div class="kanban-column" data-status="in_progress">
+                <div class="kanban-header kanban-header-primary">
+                    <div class="kanban-title">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <span>进行中</span>
+                        <span class="badge">{{ tasks_by_status.in_progress|length }}</span>
+                    </div>
+                </div>
+                <div class="kanban-body">
+                    {% for task in tasks_by_status.in_progress %}
+                    {{ render_task_card(task) }}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- 待测试 -->
+        <div class="col-md-3">
+            <div class="kanban-column" data-status="review">
+                <div class="kanban-header kanban-header-warning">
+                    <div class="kanban-title">
+                        <i class="fas fa-eye"></i>
+                        <span>待测试</span>
+                        <span class="badge">{{ tasks_by_status.review|length }}</span>
+                    </div>
+                </div>
+                <div class="kanban-body">
+                    {% for task in tasks_by_status.review %}
+                    {{ render_task_card(task) }}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- 已完成 -->
+        <div class="col-md-3">
+            <div class="kanban-column" data-status="done">
+                <div class="kanban-header kanban-header-success">
+                    <div class="kanban-title">
+                        <i class="fas fa-check-circle"></i>
+                        <span>已完成</span>
+                        <span class="badge">{{ tasks_by_status.done|length }}</span>
+                    </div>
+                </div>
+                <div class="kanban-body">
+                    {% for task in tasks_by_status.done %}
+                    {{ render_task_card(task) }}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+/* 页面头部 */
+.page-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 20px;
+    border-radius: 12px;
+    color: white;
+}
+
+.page-header h2 {
+    color: white;
+}
+
+.page-header .breadcrumb {
+    background: transparent;
+    padding: 0;
+}
+
+.page-header .breadcrumb-item a {
+    color: rgba(255,255,255,0.8);
+}
+
+.page-header .breadcrumb-item.active {
+    color: white;
+}
+
+/* 筛选卡片 */
+.filter-card {
+    border: none;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    border-radius: 12px;
+}
+
+/* 统计卡片 */
+.stat-card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    transition: all 0.3s;
+    border-left: 4px solid;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.stat-card-secondary { border-left-color: #6c757d; }
+.stat-card-primary { border-left-color: #0d6efd; }
+.stat-card-warning { border-left-color: #ffc107; }
+.stat-card-success { border-left-color: #198754; }
+
+.stat-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: white;
+}
+
+.stat-card-secondary .stat-icon { background: linear-gradient(135deg, #6c757d, #495057); }
+.stat-card-primary .stat-icon { background: linear-gradient(135deg, #0d6efd, #0b5ed7); }
+.stat-card-warning .stat-icon { background: linear-gradient(135deg, #ffc107, #e0a800); }
+.stat-card-success .stat-icon { background: linear-gradient(135deg, #198754, #157347); }
+
+.stat-content {
+    flex: 1;
+}
+
+.stat-number {
+    font-size: 28px;
+    font-weight: bold;
+    color: #333;
+}
+
+.stat-label {
+    font-size: 14px;
+    color: #666;
+}
+
+/* 图表卡片 */
+.chart-card {
+    border: none;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.chart-card .card-header {
+    background: white;
+    border-bottom: 1px solid #eee;
+    padding: 15px 20px;
+}
+
+.chart-card .card-title {
+    margin: 0;
+    font-size: 16px;
+    color: #333;
+}
+
+/* 欢迎卡片 */
+.welcome-card {
+    border: none;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.team-card {
+    border: none;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    border-radius: 10px;
+    transition: all 0.3s;
+}
+
+.team-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.12);
+}
+
+.team-btn {
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.team-btn:hover {
+    background: #0d6efd;
+    color: white;
+}
+
+/* 看板 */
+.kanban-row {
+    gap: 15px;
+}
+
+.kanban-column {
+    min-height: 600px;
+    background: #f8f9fa;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.kanban-header {
+    padding: 15px 20px;
+    color: white;
+}
+
+.kanban-header-secondary { background: linear-gradient(135deg, #6c757d, #495057); }
+.kanban-header-primary { background: linear-gradient(135deg, #0d6efd, #0b5ed7); }
+.kanban-header-warning { background: linear-gradient(135deg, #ffc107, #e0a800); }
+.kanban-header-success { background: linear-gradient(135deg, #198754, #157347); }
+
+.kanban-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.kanban-title .badge {
+    background: rgba(255,255,255,0.3);
+    color: white;
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 20px;
+}
+
+.kanban-body {
+    padding: 15px;
+    min-height: 500px;
+}
+
+/* 任务卡片 */
+.task-card {
+    background: white;
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    cursor: move;
+    transition: all 0.3s;
+    border-left: 3px solid transparent;
+}
+
+.task-card:hover {
+    box-shadow: 0 5px 15px rgba(0,0,0,0.12);
+    transform: translateY(-2px);
+    border-left-color: #0d6efd;
+}
+
+.task-card.dragging {
+    opacity: 0.5;
+    transform: rotate(3deg);
+}
+
+.task-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 10px;
+}
+
+.task-title {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+    flex: 1;
+}
+
+.task-title a {
+    color: #333;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.task-title a:hover {
+    color: #0d6efd;
+}
+
+.task-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.delete-form {
+    margin: 0;
+}
+
+.delete-btn {
+    padding: 4px 8px;
+    opacity: 0.6;
+    border-radius: 6px;
+    font-size: 12px;
+    transition: opacity 0.2s;
+}
+
+.delete-btn:hover {
+    opacity: 1;
+}
+
+/* 优先级徽章 */
+.priority-badge {
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-weight: 600;
+}
+
+.priority-urgent {
+    background: linear-gradient(135deg, #dc3545, #c82333);
+    color: white;
+}
+
+.priority-high {
+    background: linear-gradient(135deg, #fd7e14, #e8590c);
+    color: white;
+}
+
+.priority-medium {
+    background: linear-gradient(135deg, #ffc107, #e0a800);
+    color: #333;
+}
+
+.priority-low {
+    background: linear-gradient(135deg, #6c757d, #495057);
+    color: white;
+}
+
+.task-description {
+    font-size: 13px;
+    color: #666;
+    margin-bottom: 12px;
+    line-height: 1.5;
+}
+
+.task-meta {
+    font-size: 12px;
+    color: #999;
+}
+
+.assignee {
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.assignee i {
+    color: #0d6efd;
+}
+
+.progress-bar-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.progress {
+    flex: 1;
+    height: 6px;
+    border-radius: 10px;
+    background: #e9ecef;
+}
+
+.progress .progress-bar {
+    border-radius: 10px;
+    background: linear-gradient(90deg, #0d6efd, #0b5ed7);
+}
+
+.progress-text {
+    min-width: 35px;
+    font-weight: 600;
+    font-size: 12px;
+    color: #0d6efd;
+}
+
+.due-date {
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.due-date.overdue {
+    color: #dc3545;
+    font-weight: 600;
+}
+
+.tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.tag {
+    background: #e9ecef;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    color: #495057;
+}
+
+.kanban-body.drag-over {
+    background: #e7f3ff;
+    border: 2px dashed #0d6efd;
+    border-radius: 8px;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<script>
+// 拖拽功能
+document.addEventListener('DOMContentLoaded', function() {
+    const taskCards = document.querySelectorAll('.task-card');
+    const kanbanBodies = document.querySelectorAll('.kanban-body');
+    
+    taskCards.forEach(card => {
+        card.addEventListener('dragstart', handleDragStart);
+        card.addEventListener('dragend', handleDragEnd);
+    });
+    
+    kanbanBodies.forEach(body => {
+        body.addEventListener('dragover', handleDragOver);
+        body.addEventListener('drop', handleDrop);
+        body.addEventListener('dragleave', handleDragLeave);
+    });
+});
+
+let draggedCard = null;
+
+function handleDragStart(e) {
+    draggedCard = this;
+    this.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+}
+
+function handleDragEnd(e) {
+    this.classList.remove('dragging');
+    draggedCard = null;
+    document.querySelectorAll('.kanban-body').forEach(body => {
+        body.classList.remove('drag-over');
+    });
+}
+
+function handleDragOver(e) {
+    if (e.preventDefault) e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    this.classList.add('drag-over');
+    return false;
+}
+
+function handleDragLeave(e) {
+    this.classList.remove('drag-over');
+}
+
+function handleDrop(e) {
+    if (e.stopPropagation) e.stopPropagation();
+    this.classList.remove('drag-over');
+    
+    if (draggedCard) {
+        const taskId = draggedCard.dataset.taskId;
+        const newStatus = this.closest('.kanban-column').dataset.status;
+        const oldStatus = draggedCard.dataset.status;
+        
+        if (oldStatus === newStatus) return false;
+        
+        updateTaskStatus(taskId, newStatus, () => {
+            this.appendChild(draggedCard);
+            draggedCard.dataset.status = newStatus;
+            
+            const progressMap = {
+                'todo': 0,
+                'in_progress': 50,
+                'review': 80,
+                'done': 100
+            };
+            
+            const progressBar = draggedCard.querySelector('.progress-bar');
+            const progressText = draggedCard.querySelector('.progress-text');
+            if (progressBar && progressText) {
+                const newProgress = progressMap[newStatus];
+                progressBar.style.width = newProgress + '%';
+                progressText.textContent = newProgress + '%';
+            }
+            
+            updateColumnCounts();
+        });
+    }
+    
+    return false;
+}
+
+function updateTaskStatus(taskId, status, callback) {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    
+    fetch(`/tasks/${taskId}/update_status_ajax`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify({ status: status, progress: null })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            if (callback) callback();
+        } else {
+            alert('更新失败: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('更新失败，请重试');
+    });
+}
+
+function updateColumnCounts() {
+    document.querySelectorAll('.kanban-column').forEach(column => {
+        const status = column.dataset.status;
+        const count = column.querySelectorAll('.task-card').length;
+        const badge = column.querySelector('.badge');
+        if (badge) badge.textContent = count;
+    });
+}
+
+// ECharts 可视化
+{% if team %}
+document.addEventListener('DOMContentLoaded', function() {
+    var taskStatusChart = echarts.init(document.getElementById('taskStatusChart'));
+    taskStatusChart.setOption({
+        tooltip: { trigger: 'item' },
+        legend: { bottom: '5%' },
+        series: [{
+            name: '任务状态',
+            type: 'pie',
+            radius: ['40%', '70%'],
+            avoidLabelOverlap: false,
+            itemStyle: { borderRadius: 10, borderColor: '#fff', borderWidth: 2 },
+            label: { show: false, position: 'center' },
+            emphasis: { label: { show: true, fontSize: 18, fontWeight: 'bold' }},
+            labelLine: { show: false },
+            data: [
+                { value: {{ task_stats.todo }}, name: '待开始', itemStyle: { color: '#6c757d' }},
+                { value: {{ task_stats.in_progress }}, name: '进行中', itemStyle: { color: '#0d6efd' }},
+                { value: {{ task_stats.review }}, name: '待测试', itemStyle: { color: '#ffc107' }},
+                { value: {{ task_stats.done }}, name: '已完成', itemStyle: { color: '#198754' }},
+                { value: {{ task_stats.delayed }}, name: '已延期', itemStyle: { color: '#dc3545' }}
+            ]
+        }]
+    });
+    
+    var taskProgressChart = echarts.init(document.getElementById('taskProgressChart'));
+    taskProgressChart.setOption({
+        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+        grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+        xAxis: { type: 'category', data: ['0-20%', '21-40%', '41-60%', '61-80%', '81-100%'] },
+        yAxis: { type: 'value', name: '任务数' },
+        series: [{
+            name: '任务数',
+            type: 'bar',
+            data: {{ progress_distribution | tojson }},
+            itemStyle: {
+                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                    { offset: 0, color: '#0d6efd' },
+                    { offset: 1, color: '#0b5ed7' }
+                ]),
+                borderRadius: [5, 5, 0, 0]
+            }
+        }]
+    });
+    
+    window.addEventListener('resize', function() {
+        taskStatusChart.resize();
+        taskProgressChart.resize();
+    });
+});
+{% endif %}
+</script>
+{% endblock %}

@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+
+{% block title %}导入课程 - 学生成绩管理系统{% endblock %}
+
+{% block page_title %}导入课程信息{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title">导入课程数据</h5>
+        <a href="{{ url_for('course.courses_list') }}" class="btn btn-sm btn-primary float-end">
+            <i class="fa fa-arrow-left"></i> 返回列表
+        </a>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-8">
+                <form method="POST" action="{{ url_for('course.import_courses') }}" enctype="multipart/form-data">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    
+                    <div class="form-group">
+                        <label for="file" class="form-label">选择Excel文件</label>
+                        <input type="file" name="file" class="form-control" id="file" accept=".xlsx,.xls" required>
+                        <small class="form-text text-muted">
+                            请确保文件格式正确，包含以下必填列：课程代码、课程名称、学分、授课教师、学期、学年、学时
+                        </small>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fa fa-upload"></i> 导入数据
+                        </button>
+                        <a href="{{ url_for('course.export_template') }}" class="btn btn-secondary ms-2">
+                            <i class="fa fa-download"></i> 下载模板
+                        </a>
+                    </div>
+                </form>
+            </div>
+            <div class="col-md-4">
+                <div class="card bg-light">
+                    <div class="card-header">
+                        <h6 class="card-title">导入说明</h6>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-unstyled">
+                            <li><strong>必填列：</strong>课程代码、课程名称、学分、授课教师、学期、学年、学时</li>
+                            <li><strong>可选列：</strong>教室</li>
+                            <li><strong>学期格式：</strong>春季、秋季</li>
+                            <li><strong>学年格式：</strong>4位数字，如2024</li>
+                            <li><strong>授课教师：</strong>必须是系统中已存在的教师姓名</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

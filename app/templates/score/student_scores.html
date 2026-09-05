@@ -1,0 +1,159 @@
+{% extends 'base.html' %}
+
+{% block title %}我的成绩 - 学生成绩管理系统{% endblock %}
+
+{% block page_title %}我的成绩查询{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title">学生成绩查询</h5>
+        <a href="{{ url_for('score.export_scores') }}" class="btn btn-sm btn-primary float-end">
+            <i class="fa fa-download"></i> 导出我的成绩
+        </a>
+    </div>
+    <div class="card-body">
+        <!-- 个人信息 -->
+        <div class="row mb-4">
+            <div class="col-md-8">
+                <div class="profile-info">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <label>学号：</label>
+                            <span>{{ student.student_id }}</span>
+                        </div>
+                        <div class="col-md-3">
+                            <label>姓名：</label>
+                            <span>{{ student.name }}</span>
+                        </div>
+                        <div class="col-md-3">
+                            <label>年级：</label>
+                            <span>{{ student.class_name.split('-')[0] if student.class_name else '' }}</span>
+                        </div>
+                        <div class="col-md-3">
+                            <label>班级：</label>
+                            <span>{{ student.class_name }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 搜索框 -->
+        <div class="search-box mb-4">
+            <form method="GET" action="{{ url_for('score.student_scores') }}" class="search-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <select name="course_id" class="form-control">
+                            <option value="">所有课程</option>
+                            {% for course in courses %}
+                            <option value="{{ course.id }}" {% if request.args.get('course_id') == course.id|string %}selected{% endif %}>{{ course.course_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <input type="text" name="semester" class="form-control" placeholder="学期（如：2024-2025-1）" value="{{ request.args.get('semester', '') }}">
+                    </div>
+                    <div class="col-md-4">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fa fa-search"></i> 搜索
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+        
+        <!-- 成绩列表 -->
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>课程名称</th>
+                        <th>授课教师</th>
+                        <th>学期</th>
+                        <th>学分</th>
+                        <th>成绩</th>
+                        <th>成绩等级</th>
+                        <th>录入时间</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for score in scores %}
+                    <tr>
+                        <td>{{ score.course.course_name }}</td>
+                        <td>{{ score.course.teacher.name }}</td>
+                        <td>{{ score.course.semester }}</td>
+                        <td>{{ score.course.credits }}</td>
+                        <td class="score-range">
+                            {% if score.score >= 90 %}
+                                <span class="text-success">{{ score.score }}</span>
+                            {% elif score.score >= 60 %}
+                                <span class="text-primary">{{ score.score }}</span>
+                            {% else %}
+                                <span class="text-danger">{{ score.score }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if score.score >= 90 %}
+                                <span class="badge bg-success">优秀</span>
+                            {% elif score.score >= 80 %}
+                                <span class="badge bg-primary">良好</span>
+                            {% elif score.score >= 70 %}
+                                <span class="badge bg-info">中等</span>
+                            {% elif score.score >= 60 %}
+                                <span class="badge bg-secondary">及格</span>
+                            {% else %}
+                                <span class="badge bg-danger">不及格</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ score.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- 统计信息 -->
+        <div class="row mt-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="card-title">成绩统计</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="stat-info">
+                                    <div class="stat-value">{{ stats.total_courses }}</div>
+                                    <div class="stat-label">已修课程数</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-info">
+                                    <div class="stat-value">{{ stats.total_credits }}</div>
+                                    <div class="stat-label">已修总学分</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-info">
+                                    <div class="stat-value">{{ stats.avg_score }}</div>
+                                    <div class="stat-label">平均成绩</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-info">
+                                    <div class="stat-value">{{ stats.pass_rate }}</div>
+                                    <div class="stat-label">及格率</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+
+    </div>
+</div>
+{% endblock %}

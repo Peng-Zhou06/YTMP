@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+
+{% block title %}课程管理 - 学生成绩管理系统{% endblock %}
+
+{% block page_title %}课程列表{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title">课程信息管理</h5>
+        <div class="float-end">
+            <a href="{{ url_for('course.import_courses') }}" class="btn btn-sm btn-success me-2">
+                <i class="fa fa-upload"></i> 导入
+            </a>
+            <a href="{{ url_for('course.export_courses') }}" class="btn btn-sm btn-primary me-2">
+                <i class="fa fa-download"></i> 导出
+            </a>
+            <a href="{{ url_for('course.add_course') }}" class="btn btn-sm btn-primary">
+                <i class="fa fa-plus"></i> 添加课程
+            </a>
+        </div>
+    </div>
+    <div class="card-body">
+        <!-- 搜索框 -->
+        <div class="search-box">
+            <form method="GET" action="{{ url_for('course.courses_list') }}" class="search-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <input type="text" name="course_code" class="form-control" placeholder="课程编号" value="{{ request.args.get('course_code', '') }}">
+                    </div>
+                    <div class="col-md-3">
+                        <input type="text" name="course_name" class="form-control" placeholder="课程名称" value="{{ request.args.get('course_name', '') }}">
+                    </div>
+                    <div class="col-md-3">
+                        <select name="teacher_id" class="form-control">
+                            <option value="">授课教师</option>
+                            {% for teacher in teachers %}
+                            <option value="{{ teacher.id }}" {% if request.args.get('teacher_id') == teacher.id|string %}selected{% endif %}>{{ teacher.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fa fa-search"></i> 搜索
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+        
+        <!-- 课程列表 -->
+        <form id="batch-form" method="POST" action="{{ url_for('course.courses_batch_delete') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th width="5%">
+                                <input type="checkbox" class="checkbox-all">
+                            </th>
+                            <th>课程编号</th>
+                            <th>课程名称</th>
+                            <th>授课教师</th>
+                            <th>学分</th>
+                            <th>课时</th>
+                            <th>学年</th>
+                            <th>学期</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for course in courses %}                        <tr>
+                            <td>
+                                <input type="checkbox" class="checkbox-item" name="ids" value="{{ course.id }}">
+                            </td>
+                            <td><a href="{{ url_for('course.course_detail', course_id=course.id) }}" class="text-primary">{{ course.course_code }}</a></td>
+                            <td><a href="{{ url_for('course.course_detail', course_id=course.id) }}" class="text-primary">{{ course.course_name }}</a></td>
+                            <td>{{ course.teacher.name if course.teacher else '未分配' }}</td>
+                            <td>{{ course.credits }}</td>
+                            <td>{{ course.hours }}</td>
+                            <td>{{ course.year }}</td>
+                            <td>{{ course.semester }}</td>
+                            <td>
+                                <a href="{{ url_for('course.edit_course', course_id=course.id) }}" class="btn btn-sm btn-primary me-1">
+                                    <i class="fa fa-edit"></i> 编辑
+                                </a>
+                                <a href="{{ url_for('course.delete_course', course_id=course.id) }}" class="btn btn-sm btn-danger btn-delete">
+                                    <i class="fa fa-trash"></i> 删除
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- 批量操作 -->
+            <div class="row">
+                <div class="col-md-6">
+                    <select class="form-control batch-action" data-export-url="{{ url_for('course.export_courses') }}">
+                        <option value="">批量操作</option>
+                        <option value="delete">删除选中</option>
+                        <option value="export">导出选中</option>
+                    </select>
+                </div>
+                
+                <!-- 分页 -->
+                <div class="col-md-6">
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination justify-content-end">
+                            <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+                                <a class="page-link" href="{{ url_for('course.courses_list', page=pagination.prev_num) if pagination.has_prev else '#' }}" aria-label="Previous">
+                                    <span aria-hidden="true">&laquo;</span>
+                                </a>
+                            </li>
+                            {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+                                {% if page_num %}
+                                    <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
+                                        <a class="page-link" href="{{ url_for('course.courses_list', page=page_num) }}">{{ page_num }}</a>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                                {% endif %}
+                            {% endfor %}
+                            <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+                                <a class="page-link" href="{{ url_for('course.courses_list', page=pagination.next_num) if pagination.has_next else '#' }}" aria-label="Next">
+                                    <span aria-hidden="true">&raquo;</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

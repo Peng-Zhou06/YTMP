@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+
+{% block title %}创建小组 - 云智实训管理平台{% endblock %}
+
+{% block page_title %}创建小组{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">填写小组信息</h5>
+                <a href="javascript:history.back()" class="btn btn-sm btn-outline-secondary">
+                    <i class="fa fa-arrow-left"></i> 返回
+                </a>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="mb-3">
+                        <label for="team_name" class="form-label">小组名称 <span class="text-danger">*</span></label>
+                        {{ form.team_name(class="form-control", placeholder="请输入小组名称") }}
+                        {% for error in form.team_name.errors %}
+                            <span class="text-danger">{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="project_id" class="form-label">所属项目 <span class="text-danger">*</span></label>
+                        {{ form.project_id(class="form-select") }}
+                        {% for error in form.project_id.errors %}
+                            <span class="text-danger">{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="leader_id" class="form-label">组长 <span class="text-danger">*</span></label>
+                        {{ form.leader_id(class="form-select") }}
+                        {% for error in form.leader_id.errors %}
+                            <span class="text-danger">{{ error }}</span>
+                        {% endfor %}
+                        <small class="text-muted">选择的组长将自动成为小组成员</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">小组描述</label>
+                        {{ form.description(class="form-control", rows=3, placeholder="请输入小组描述") }}
+                        {% for error in form.description.errors %}
+                            <span class="text-danger">{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="github_repo" class="form-label">GitHub仓库地址</label>
+                        {{ form.github_repo(class="form-control", placeholder="https://github.com/username/repo") }}
+                        {% for error in form.github_repo.errors %}
+                            <span class="text-danger">{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('project.teams_list') }}" class="btn btn-secondary">
+                            <i class="fa fa-arrow-left"></i> 返回
+                        </a>
+                        {{ form.submit(class="btn btn-primary") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 右侧提示 -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">创建提示</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled">
+                    <li class="mb-2">
+                        <i class="fa fa-check text-success"></i> 
+                        小组名称应该简洁明了
+                    </li>
+                    <li class="mb-2">
+                        <i class="fa fa-check text-success"></i> 
+                        选择一个负责任的学生作为组长
+                    </li>
+                    <li class="mb-2">
+                        <i class="fa fa-check text-success"></i> 
+                        建议提前准备好GitHub仓库
+                    </li>
+                    <li class="mb-2">
+                        <i class="fa fa-check text-success"></i> 
+                        创建后可以继续添加其他成员
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+
+{% block title %}上传资料 - {{ course.course_name }}{% endblock %}
+
+{% block page_title %}上传课程资料{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title">上传资料到《{{ course.course_name }}》</h5>
+        <a href="{{ url_for('course.course_detail', course_id=course.id) }}" class="btn btn-sm btn-primary float-end">
+            <i class="fa fa-arrow-left"></i> 返回课程详情
+        </a>
+    </div>
+    <div class="card-body">
+        <form method="POST" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="mb-3">
+                <label class="form-label">资料名称</label>
+                <input type="text" name="title" class="form-control" required placeholder="请输入资料名称">
+            </div>
+            <div class="mb-3">
+                <label class="form-label">选择文件</label>
+                <input type="file" name="file" class="form-control" required>
+                <small class="form-text text-muted">支持所有常见文件格式</small>
+            </div>
+            <button type="submit" class="btn btn-primary">
+                <i class="fa fa-upload"></i> 上传
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

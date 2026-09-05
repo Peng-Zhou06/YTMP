@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}提交日报{% endblock %}
+
+{% block page_title %}提交日报{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('project.daily_reports_list') }}">日报管理</a></li>
+                    <li class="breadcrumb-item active">提交日报</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title">提交日报</h5>
+        </div>
+        <div class="card-body">
+            <form method="POST">
+                {{ form.csrf_token }}
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            {{ form.report_date.label(class="form-label") }}
+                            {{ form.report_date(class="form-control", type="date") }}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            {{ form.team_id.label(class="form-label") }}
+                            <select name="team_id" id="team_id" class="form-select">
+                                <option value="">请选择小组</option>
+                                {% for team in teams %}
+                                <option value="{{ team.id }}">{{ team.team_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            {{ form.student_id.label(class="form-label") }}
+                            <select name="student_id" id="student_id" class="form-select">
+                                <option value="">请选择学生</option>
+                                {% for student in students %}
+                                <option value="{{ student.id }}">{{ student.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            {{ form.working_hours.label(class="form-label") }}
+                            {{ form.working_hours(class="form-control", placeholder="今日工作时长") }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            {{ form.mood.label(class="form-label") }}
+                            <select name="mood" id="mood" class="form-select">
+                                <option value="happy">😊 开心</option>
+                                <option value="normal">😐 一般</option>
+                                <option value="stressed">😫 紧张</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            {{ form.is_submitted.label(class="form-label") }}
+                            <div class="form-check">
+                                {{ form.is_submitted(class="form-check-input") }}
+                                <label class="form-check-label" for="is_submitted">标记为已提交</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    {{ form.today_work.label(class="form-label") }}
+                    {{ form.today_work(class="form-control", rows=4, placeholder="今日完成的工作内容...") }}
+                </div>
+
+                <div class="mb-3">
+                    {{ form.tomorrow_plan.label(class="form-label") }}
+                    {{ form.tomorrow_plan(class="form-control", rows=3, placeholder="明日工作计划...") }}
+                </div>
+
+                <div class="mb-3">
+                    {{ form.issues.label(class="form-label") }}
+                    {{ form.issues(class="form-control", rows=3, placeholder="今日遇到的问题...") }}
+                </div>
+
+                <div class="mb-3">
+                    {{ form.solutions.label(class="form-label") }}
+                    {{ form.solutions(class="form-control", rows=3, placeholder="解决方案或思路...") }}
+                </div>
+
+                <button type="submit" class="btn btn-primary">
+                    <i class="fa fa-save"></i> 保存日报
+                </button>
+                <a href="{{ url_for('project.daily_reports_list') }}" class="btn btn-secondary ml-2">
+                    <i class="fa fa-arrow-left"></i> 返回
+                </a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

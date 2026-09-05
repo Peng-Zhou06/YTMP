@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}我的课程{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Heading -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">我的课程</h1>
+    </div>
+
+    <!-- DataTales Example -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">课程列表</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>课程代码</th>
+                            <th>课程名称</th>
+                            <th>学分</th>
+                            <th>授课班级</th>
+                            <th>学生人数</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tfoot>
+                        <tr>
+                            <th>课程代码</th>
+                            <th>课程名称</th>
+                            <th>学分</th>
+                            <th>授课班级</th>
+                            <th>学生人数</th>
+                            <th>操作</th>
+                        </tr>
+                    </tfoot>
+                    <tbody>
+                        {% for course in courses %}
+                        <tr>
+                            <td>{{ course.course_code }}</td>
+                            <td>{{ course.course_name }}</td>
+                            <td>{{ course.credits }}</td>
+                            <td>{{ course.class_name }}</td>
+                            <td>{{ course.student_count }}</td>
+                            <td>
+                                <a href="{{ url_for('score.course_scores', course_id=course.id) }}" class="btn btn-sm btn-info">
+                                    <i class="fas fa-list"></i> 成绩管理
+                                </a>
+                                <a href="{{ url_for('score.batch_score', course_id=course.id) }}" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-edit"></i> 批量更新成绩
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    $('#dataTable').DataTable({
+        "order": [[0, "asc"]]
+    });
+});
+</script>
+{% endblock %}

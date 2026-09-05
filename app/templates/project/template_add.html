@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block title %}添加项目模板 - 云智实训管理平台{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('system.dashboard') }}">首页</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('project.templates_list') }}">项目模板管理</a></li>
+                    <li class="breadcrumb-item active">添加模板</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-plus-circle"></i> 添加项目模板</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('project.add_template') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        {{ form.hidden_tag() }}
+                        
+                        <!-- 模板名称 -->
+                        <div class="form-group">
+                            <label for="name">{{ form.name.label }} <span class="text-danger">*</span></label>
+                            {{ form.name(class="form-control", placeholder="例如：Python Web项目实训") }}
+                            {% if form.name.errors %}
+                                {% for error in form.name.errors %}
+                                    <small class="text-danger">{{ error }}</small>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+
+                        <!-- 模板描述 -->
+                        <div class="form-group">
+                            <label for="description">{{ form.description.label }}</label>
+                            {{ form.description(class="form-control", rows=3, placeholder="简要描述该模板的用途和适用场景") }}
+                            {% if form.description.errors %}
+                                {% for error in form.description.errors %}
+                                    <small class="text-danger">{{ error }}</small>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+
+                        <!-- 技术栈 -->
+                        <div class="form-group">
+                            <label for="tech_stack">{{ form.tech_stack.label }}</label>
+                            {{ form.tech_stack(class="form-control", placeholder="例如：Flask,Vue,MySQL,Docker") }}
+                            <small class="form-text text-muted">多个技术用逗号分隔</small>
+                            {% if form.tech_stack.errors %}
+                                {% for error in form.tech_stack.errors %}
+                                    <small class="text-danger">{{ error }}</small>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+
+                        <!-- 难度级别 -->
+                        <div class="form-group">
+                            <label for="difficulty_level">{{ form.difficulty_level.label }}</label>
+                            {{ form.difficulty_level(class="form-control") }}
+                            {% if form.difficulty_level.errors %}
+                                {% for error in form.difficulty_level.errors %}
+                                    <small class="text-danger">{{ error }}</small>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+
+                        <!-- 预计工时 -->
+                        <div class="form-group">
+                            <label for="estimated_hours">{{ form.estimated_hours.label }}</label>
+                            {{ form.estimated_hours(class="form-control", placeholder="例如：40") }}
+                            <small class="form-text text-muted">单位：小时</small>
+                            {% if form.estimated_hours.errors %}
+                                {% for error in form.estimated_hours.errors %}
+                                    <small class="text-danger">{{ error }}</small>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+
+                        <!-- 模板配置 -->
+                        <div class="form-group">
+                            <label for="template_config">{{ form.template_config.label }}</label>
+                            {{ form.template_config(class="form-control", rows=5, placeholder='{"requirements": ["需求1", "需求2"], "milestones": [{"name": "阶段1", "days": 7}]}') }}
+                            <small class="form-text text-muted">JSON格式的模板配置（可选）</small>
+                            {% if form.template_config.errors %}
+                                {% for error in form.template_config.errors %}
+                                    <small class="text-danger">{{ error }}</small>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+
+                        <!-- 是否启用 -->
+                        <div class="form-group form-check">
+                            {{ form.is_active(class="form-check-input") }}
+                            <label for="is_active" class="form-check-label">{{ form.is_active.label }}</label>
+                        </div>
+
+                        <!-- 提交按钮 -->
+                        <div class="form-group">
+                            {{ form.submit(class="btn btn-primary") }}
+                            <a href="{{ url_for('project.templates_list') }}" class="btn btn-secondary">取消</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,314 @@
+{% extends "base.html" %}
+
+{% block title %}{{ project.name }} - 项目详情{% endblock %}
+
+{% block page_title %}{{ project.name }}{% endblock %}
+
+{% block extra_css %}
+<script src="https://cdn.staticfile.org/echarts/5.4.3/echarts.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- 项目基本信息 -->
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">项目信息</h5>
+                <a href="javascript:history.back()" class="btn btn-sm btn-outline-secondary">
+                    <i class="fa fa-arrow-left"></i> 返回
+                </a>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless">
+                    <tr>
+                        <th width="150">项目编号：</th>
+                        <td>{{ project.project_code }}</td>
+                    </tr>
+                    <tr>
+                        <th>项目名称：</th>
+                        <td>{{ project.name }}</td>
+                    </tr>
+                    {% if project.template %}
+                    <tr>
+                        <th>使用模板：</th>
+                        <td>
+                            {{ project.template.name }}
+                            {% if project.template.difficulty_level %}
+                                <span class="badge badge-info ml-2">
+                                    {{ {'easy': '简单', 'medium': '中等', 'hard': '困难'}[project.template.difficulty_level] }}
+                                </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endif %}
+                    <tr>
+                        <th>项目描述：</th>
+                        <td>{{ project.description or '-' }}</td>
+                    </tr>
+                    {% if project.tech_stack %}
+                    <tr>
+                        <th>技术栈：</th>
+                        <td>
+                            {% for tech in project.tech_stack.split(',') %}
+                                <span class="badge badge-primary mr-1">{{ tech.strip() }}</span>
+                            {% endfor %}
+                        </td>
+                    </tr>
+                    {% endif %}
+                    <tr>
+                        <th>负责教师：</th>
+                        <td>{{ project.teacher.name if project.teacher else '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>开始时间：</th>
+                        <td>{{ project.start_date.strftime('%Y-%m-%d') }}</td>
+                    </tr>
+                    <tr>
+                        <th>结束时间：</th>
+                        <td>{{ project.end_date.strftime('%Y-%m-%d') }}</td>
+                    </tr>
+                    <tr>
+                        <th>最大小组人数：</th>
+                        <td>{{ project.max_team_size }}</td>
+                    </tr>
+                    <tr>
+                        <th>状态：</th>
+                        <td>
+                            {% if project.status == 'planning' %}
+                                <span class="badge bg-secondary">规划中</span>
+                            {% elif project.status == 'ongoing' %}
+                                <span class="badge bg-primary">进行中</span>
+                            {% elif project.status == 'completed' %}
+                                <span class="badge bg-success">已完成</span>
+                            {% elif project.status == 'archived' %}
+                                <span class="badge bg-dark">已归档</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% if project.requirements %}
+                    <tr>
+                        <th>项目要求：</th>
+                        <td>{{ project.requirements }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if project.evaluation_criteria %}
+                    <tr>
+                        <th>评分标准：</th>
+                        <td>{{ project.evaluation_criteria }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if project.deploy_url %}
+                    <tr>
+                        <th>部署地址：</th>
+                        <td>
+                            <a href="{{ project.deploy_url }}" target="_blank" class="text-primary">
+                                <i class="fas fa-external-link-alt"></i> {{ project.deploy_url }}
+                            </a>
+                        </td>
+                    </tr>
+                    {% endif %}
+                </table>
+                
+                {% if current_user.role in ['admin', 'teacher'] %}
+                <hr>
+                <a href="{{ url_for('course.edit_project', project_id=project.id) }}" 
+                   class="btn btn-warning">
+                    <i class="fa fa-edit"></i> 编辑项目
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- 小组列表 -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">项目小组 ({{ teams|length }})</h5>
+            </div>
+            <div class="card-body">
+                {% if teams %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>小组名称</th>
+                                <th>组长</th>
+                                <th>成员数</th>
+                                <th>GitHub仓库</th>
+                                <th>状态</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for team in teams %}
+                            <tr>
+                                <td>{{ team.team_name }}</td>
+                                <td>{{ team.leader.name if team.leader else '-' }}</td>
+                                <td>{{ team.members|length }}</td>
+                                <td>
+                                    {% if team.github_repo %}
+                                    <a href="{{ team.github_repo }}" target="_blank">
+                                        <i class="fa fa-github"></i> 查看
+                                    </a>
+                                    {% else %}
+                                    -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if team.status == 'active' %}
+                                        <span class="badge bg-success">活跃</span>
+                                    {% elif team.status == 'completed' %}
+                                        <span class="badge bg-primary">已完成</span>
+                                    {% elif team.status == 'disbanded' %}
+                                        <span class="badge bg-secondary">已解散</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('project.team_detail', team_id=team.id) }}" 
+                                       class="btn btn-sm btn-info">
+                                        <i class="fa fa-eye"></i> 查看
+                                    </a>
+                                    {% if current_user.role in ['admin', 'teacher'] %}
+                                    <form action="{{ url_for('project.delete_team', team_id=team.id) }}" method="POST" class="d-inline" onsubmit="return confirm('确定要删除这个小组吗？');">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-sm btn-danger ml-1">
+                                            <i class="fa fa-trash"></i> 删除
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    <i class="fa fa-info-circle"></i> 暂无小组
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- 统计信息 -->
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">项目统计</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6 mb-3">
+                        <div class="border rounded p-3">
+                            <h3 class="text-primary">{{ stats.total_teams }}</h3>
+                            <p class="text-muted mb-0">小组数量</p>
+                        </div>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="border rounded p-3">
+                            <h3 class="text-success">{{ stats.total_tasks }}</h3>
+                            <p class="text-muted mb-0">任务总数</p>
+                        </div>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="border rounded p-3">
+                            <h3 class="text-info">{{ stats.completed_tasks }}</h3>
+                            <p class="text-muted mb-0">已完成任务</p>
+                        </div>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="border rounded p-3">
+                            <h3 class="text-warning">{{ stats.total_bugs }}</h3>
+                            <p class="text-muted mb-0">Bug数量</p>
+                        </div>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="border rounded p-3">
+                            <h3 class="text-danger">{{ stats.open_bugs }}</h3>
+                            <p class="text-muted mb-0">未解决Bug</p>
+                        </div>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="border rounded p-3">
+                            <h3 class="text-secondary">{{ stats.total_commits }}</h3>
+                            <p class="text-muted mb-0">代码提交</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <!-- 进度条 -->
+                <div class="mb-3">
+                    <label class="form-label">项目进度</label>
+                    <div class="progress">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                             role="progressbar" 
+                             style="width: {{ '%.1f'|format(stats.progress) }}%">
+                            {{ '%.1f'|format(stats.progress) }}%
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 任务状态分布图 -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">任务状态分布</h5>
+            </div>
+            <div class="card-body">
+                <div id="taskChart" style="height: 300px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// 初始化ECharts图表
+document.addEventListener('DOMContentLoaded', function() {
+    // 任务状态分布图
+    var taskChart = echarts.init(document.getElementById('taskChart'));
+    
+    var option = {
+        tooltip: {
+            trigger: 'item'
+        },
+        legend: {
+            orient: 'vertical',
+            left: 'left'
+        },
+        series: [
+            {
+                name: '任务状态',
+                type: 'pie',
+                radius: '50%',
+                data: [
+                    { value: {{ stats.completed_tasks }}, name: '已完成' },
+                    { value: {{ stats.in_progress_tasks }}, name: '进行中' },
+                    { value: {{ stats.total_tasks - stats.completed_tasks - stats.in_progress_tasks }}, name: '待办' }
+                ],
+                emphasis: {
+                    itemStyle: {
+                        shadowBlur: 10,
+                        shadowOffsetX: 0,
+                        shadowColor: 'rgba(0, 0, 0, 0.5)'
+                    }
+                }
+            }
+        ]
+    };
+    
+    taskChart.setOption(option);
+    
+    // 响应式
+    window.addEventListener('resize', function() {
+        taskChart.resize();
+    });
+});
+</script>
+{% endblock %}

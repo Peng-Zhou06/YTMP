@@ -1,0 +1,106 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}爬虫数据管理{% endblock %}
+
+{% block page_title %}爬虫数据管理{% endblock %}
+
+{% block page_subtitle %}管理爬虫采集的数据记录{% endblock %}
+
+{% block content %}
+<!-- 统计卡片 -->
+{% if stats %}
+<div class="row mb-4">
+    <div class="col-lg-3 col-md-6">
+        <div class="stat-card-modern stat-card-primary">
+            <div class="stat-icon"><i class="fa fa-spider"></i></div>
+            <div class="stat-number">{{ stats.total_crawls }}</div>
+            <div class="stat-label">总爬取次数</div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="stat-card-modern stat-card-success">
+            <div class="stat-icon"><i class="fa fa-check-circle"></i></div>
+            <div class="stat-number">{{ stats.success_count }}</div>
+            <div class="stat-label">成功次数</div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="stat-card-modern stat-card-danger">
+            <div class="stat-icon"><i class="fa fa-times-circle"></i></div>
+            <div class="stat-number">{{ stats.failed_count }}</div>
+            <div class="stat-label">失败次数</div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="stat-card-modern stat-card-info">
+            <div class="stat-icon"><i class="fa fa-database"></i></div>
+            <div class="stat-number">{{ stats.total_records }}</div>
+            <div class="stat-label">总记录数</div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- 操作面板 -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="card-title"><i class="fa fa-cog" style="color: var(--primary-color);"></i> 爬取操作</h5>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <form action="{{ url_for('project.crawl_data') }}" method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="input-group">
+                        <input type="text" name="url" class="form-control" placeholder="输入爬取URL" required>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fa fa-download"></i> 开始爬取
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 数据列表 -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title"><i class="fa fa-table" style="color: var(--primary-color);"></i> 爬取记录</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-modern">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>URL</th>
+                        <th>状态</th>
+                        <th>记录数</th>
+                        <th>创建时间</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for crawl in crawls %}
+                    <tr>
+                        <td>{{ crawl.id }}</td>
+                        <td class="text-truncate" style="max-width: 300px;">{{ crawl.url }}</td>
+                        <td>
+                            {% if crawl.status == 'success' %}
+                                <span class="badge badge-success">成功</span>
+                            {% elif crawl.status == 'failed' %}
+                                <span class="badge badge-danger">失败</span>
+                            {% else %}
+                                <span class="badge badge-warning">进行中</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ crawl.record_count or 0 }}</td>
+                        <td>{{ crawl.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

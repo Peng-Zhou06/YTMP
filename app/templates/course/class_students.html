@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ class_name }}班 - {{ course.course_name }}{% endblock %}
+
+{% block page_title %}{{ course.course_name }} - {{ class_name }}班{% endblock %}
+
+{% block content %}
+<div class="card mb-3">
+    <div class="card-header">
+        <h5 class="card-title">{{ class_name }}班学生列表</h5>
+        <a href="{{ url_for('course.course_detail', course_id=course.id) }}" class="btn btn-sm btn-primary float-end">
+            <i class="fa fa-arrow-left"></i> 返回课程详情
+        </a>
+    </div>
+    <div class="card-body">
+        <!-- 搜索框 -->
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <input type="text" id="searchInput" class="form-control" placeholder="搜索学生姓名或学号...">
+            </div>
+        </div>
+        
+        <div class="row" id="studentList">
+            {% for student in students %}
+            <div class="col-md-3 mb-3 student-item" data-name="{{ student.name }}" data-id="{{ student.student_id }}">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <div class="mb-2">
+                            {% if student.user and student.user.avatar %}
+                            <img src="{{ url_for('static', filename=student.user.avatar) }}" class="rounded-circle" width="80" height="80" alt="头像">
+                            {% else %}
+                            <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center mx-auto" style="width: 80px; height: 80px; font-size: 2rem;">
+                                {{ student.name[0] }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        <h6 class="card-title mb-1">{{ student.name }}</h6>
+                        <p class="text-muted mb-1">{{ student.student_id }}</p>
+                        {% if student.id in student_scores %}
+                        <span class="badge bg-primary">成绩：{{ student_scores[student.id] }}</span>
+                        {% else %}
+                        <span class="badge bg-secondary">未录入成绩</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    const studentList = document.getElementById('studentList');
+    const students = studentList.querySelectorAll('.student-item');
+    
+    searchInput.addEventListener('input', function() {
+        const keyword = this.value.toLowerCase();
+        
+        students.forEach(function(student) {
+            const name = student.getAttribute('data-name').toLowerCase();
+            const id = student.getAttribute('data-id').toLowerCase();
+            
+            if (name.includes(keyword) || id.includes(keyword)) {
+                student.style.display = '';
+            } else {
+                student.style.display = 'none';
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

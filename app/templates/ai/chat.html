@@ -1,0 +1,334 @@
+{% extends "base.html" %}
+
+{% block title %}AI 智能助手 - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fa fa-robot"></i> AI 智能助手</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="row g-0">
+                        <!-- 左侧：快捷操作 -->
+                        <div class="col-md-3 bg-light p-3 border-end">
+                            <h6 class="text-muted mb-3">快捷操作</h6>
+                            
+                            <div class="list-group mb-3">
+                                <button class="list-group-item list-group-item-action" onclick="useTemplate('code_generation')">
+                                    <i class="fa fa-code"></i> 代码生成
+                                </button>
+                                <button class="list-group-item list-group-item-action" onclick="useTemplate('debugging')">
+                                    <i class="fa fa-bug"></i> 错误调试
+                                </button>
+                                <button class="list-group-item list-group-item-action" onclick="useTemplate('documentation')">
+                                    <i class="fa fa-book"></i> 文档编写
+                                </button>
+                                <button class="list-group-item list-group-item-action" onclick="useTemplate('testing')">
+                                    <i class="fa fa-check-circle"></i> 测试编写
+                                </button>
+                                <button class="list-group-item list-group-item-action" onclick="useTemplate('docker')">
+                                    <i class="fa fa-docker"></i> Docker 部署
+                                </button>
+                            </div>
+                            
+                            <h6 class="text-muted mb-3">常见问题</h6>
+                            <div class="list-group">
+                                <button class="list-group-item list-group-item-action" onclick="askQuestion('如何定义 Flask 路由？')">
+                                    <i class="fa fa-question-circle"></i> 如何定义 Flask 路由？
+                                </button>
+                                <button class="list-group-item list-group-item-action" onclick="askQuestion('如何使用 SQLAlchemy 定义模型？')">
+                                    <i class="fa fa-question-circle"></i> 如何定义数据库模型？
+                                </button>
+                                <button class="list-group-item list-group-item-action" onclick="askQuestion('如何部署 Flask 应用到 Docker？')">
+                                    <i class="fa fa-question-circle"></i> 如何部署到 Docker？
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- 右侧：聊天区域 -->
+                        <div class="col-md-9">
+                            <!-- 消息列表 -->
+                            <div id="chatMessages" class="p-3" style="height: 500px; overflow-y: auto;">
+                                <div class="message ai-message mb-3">
+                                    <div class="d-flex">
+                                        <div class="avatar bg-primary text-white rounded-circle me-2" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
+                                            <i class="fa fa-robot"></i>
+                                        </div>
+                                        <div class="message-content">
+                                            <div class="message-text bg-light p-3 rounded">
+                                                你好！我是 AI 开发助手，专门帮助你学习 Flask 和云计算开发。<br><br>
+                                                我可以帮你：<br>
+                                                - 解答技术问题<br>
+                                                - 分析代码错误<br>
+                                                - 提供开发建议<br>
+                                                - 解释技术概念<br><br>
+                                                请问有什么我可以帮你的？
+                                            </div>
+                                            <small class="text-muted">刚刚</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 输入区域 -->
+                            <div class="border-top p-3">
+                                <div class="input-group">
+                                    <textarea id="messageInput" class="form-control" rows="2" placeholder="输入你的问题..."></textarea>
+                                    <button class="btn btn-primary" onclick="sendMessage()">
+                                        <i class="fa fa-paper-plane"></i> 发送
+                                    </button>
+                                </div>
+                                <div class="form-text mt-2">
+                                    <i class="fa fa-info-circle"></i> 按 Enter 发送，Shift+Enter 换行
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 引入 marked.js 用于 Markdown 渲染 -->
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+<style>
+.message-text {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.message-text code {
+    background-color: #f8f9fa;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: 'Courier New', monospace;
+}
+
+.message-text pre {
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-radius: 5px;
+    overflow-x: auto;
+}
+
+.message-text pre code {
+    background-color: transparent;
+    padding: 0;
+}
+
+.typing-indicator {
+    display: inline-flex;
+    gap: 4px;
+}
+
+.typing-indicator span {
+    width: 8px;
+    height: 8px;
+    background-color: #6c757d;
+    border-radius: 50%;
+    animation: typing 1.4s infinite;
+}
+
+.typing-indicator span:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.typing-indicator span:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes typing {
+    0%, 60%, 100% {
+        transform: translateY(0);
+    }
+    30% {
+        transform: translateY(-10px);
+    }
+}
+</style>
+
+<script>
+let chatHistory = [];
+let isWaiting = false;
+
+// 发送消息
+function sendMessage() {
+    const input = document.getElementById('messageInput');
+    const message = input.value.trim();
+    
+    if (!message || isWaiting) return;
+    
+    // 添加用户消息到界面
+    addUserMessage(message);
+    
+    // 清空输入框
+    input.value = '';
+    
+    // 添加加载指示器
+    addTypingIndicator();
+    
+    // 获取 CSRF token
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+    
+    // 发送到 API
+    isWaiting = true;
+    fetch('/ai/api/chat', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify({
+            message: message,
+            history: chatHistory,
+            model: 'glm-4-flash'
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        removeTypingIndicator();
+        
+        if (data.success) {
+            addAIMessage(data.response);
+            chatHistory.push(['user', message]);
+            chatHistory.push(['assistant', data.response]);
+        } else {
+            addAIMessage('抱歉，出现错误：' + (data.error || '未知错误'));
+        }
+        
+        isWaiting = false;
+    })
+    .catch(error => {
+        removeTypingIndicator();
+        addAIMessage('网络错误，请稍后重试');
+        isWaiting = false;
+    });
+}
+
+// 添加用户消息
+function addUserMessage(message) {
+    const container = document.getElementById('chatMessages');
+    const time = new Date().toLocaleTimeString();
+    
+    const html = `
+        <div class="message user-message mb-3">
+            <div class="d-flex justify-content-end">
+                <div class="message-content">
+                    <div class="message-text bg-primary text-white p-3 rounded">${escapeHtml(message)}</div>
+                    <small class="text-muted">${time}</small>
+                </div>
+                <div class="avatar bg-success text-white rounded-circle ms-2" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
+                    <i class="fa fa-user"></i>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    container.insertAdjacentHTML('beforeend', html);
+    scrollToBottom();
+}
+
+// 添加 AI 消息
+function addAIMessage(message) {
+    const container = document.getElementById('chatMessages');
+    const time = new Date().toLocaleTimeString();
+    
+    // 使用 marked.js 渲染 Markdown
+    const renderedContent = marked.parse(message);
+    
+    const html = `
+        <div class="message ai-message mb-3">
+            <div class="d-flex">
+                <div class="avatar bg-primary text-white rounded-circle me-2" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
+                    <i class="fa fa-robot"></i>
+                </div>
+                <div class="message-content">
+                    <div class="message-text bg-light p-3 rounded">${renderedContent}</div>
+                    <small class="text-muted">${time}</small>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    container.insertAdjacentHTML('beforeend', html);
+    scrollToBottom();
+}
+
+// 添加打字指示器
+function addTypingIndicator() {
+    const container = document.getElementById('chatMessages');
+    
+    const html = `
+        <div class="message ai-message mb-3" id="typingIndicator">
+            <div class="d-flex">
+                <div class="avatar bg-primary text-white rounded-circle me-2" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
+                    <i class="fa fa-robot"></i>
+                </div>
+                <div class="message-content">
+                    <div class="message-text bg-light p-3 rounded">
+                        <div class="typing-indicator">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    container.insertAdjacentHTML('beforeend', html);
+    scrollToBottom();
+}
+
+// 移除打字指示器
+function removeTypingIndicator() {
+    const indicator = document.getElementById('typingIndicator');
+    if (indicator) {
+        indicator.remove();
+    }
+}
+
+// 滚动到底部
+function scrollToBottom() {
+    const container = document.getElementById('chatMessages');
+    container.scrollTop = container.scrollHeight;
+}
+
+// 转义 HTML
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// 使用模板
+function useTemplate(scene) {
+    fetch(`/ai/api/prompt-template/${scene}`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('messageInput').value = data.template;
+            document.getElementById('messageInput').focus();
+        });
+}
+
+// 提问常见问题
+function askQuestion(question) {
+    document.getElementById('messageInput').value = question;
+    sendMessage();
+}
+
+// 键盘快捷键
+document.getElementById('messageInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+    }
+});
+</script>
+{% endblock %}
